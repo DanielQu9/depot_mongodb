@@ -7,5 +7,6 @@
 ehthumbs.db
 Thumbs.db
 test.py
-
+*.pyc
+__pycache__/
 .env
