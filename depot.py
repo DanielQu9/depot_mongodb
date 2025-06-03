@@ -1,0 +1,93 @@
+import datetime
+from typing import Literal
+from pymongo import MongoClient
+
+
+class Depot:
+    """
+    倉庫紀錄\n
+    - write 寫入\n
+    - show_inventory 讀取當前狀態\n
+    """
+    def __init__(self) -> None:
+        # 連線
+        self.client = MongoClient("mongodb://localhost:27017/")
+        self.db = self.client["depotDB"]
+        
+        # 資料表
+        self.inventory = self.db["inventory"]       # 倉庫
+        self.collection = self.__today_collection   # 交易紀錄
+        
+    def write(self,
+              type: Literal["in", "out"],
+              item: str,
+              amount: int,
+              time=None
+    ) -> None:
+        """
+        新增一筆進出貨資料\n
+        type: 'in' or 'out'\n
+        item: 商品名稱\n
+        amount: 數量（正整數）\n
+        time: 時間（可選，預設為現在時間）\n
+        """
+        
+        # 重新獲取日期
+        self.collection = self.__today_collection
+        
+        if type not in ("in", "out"):
+            raise ValueError("警告: type 必須是 'in' 或 'out'")
+        if not isinstance(amount, int) or amount <= 0:
+            raise ValueError("警告: amount 必須是正整數")
+        if time is None:
+            time = datetime.datetime.now()
+
+        # 取得現有庫存
+        item_doc = self.inventory.find_one({"item": item})
+        current_amount = item_doc["amount"] if item_doc else 0
+
+        if type == "in":
+            new_amount = current_amount + amount
+        elif type == "out":
+            if current_amount < amount:
+                raise ValueError(f"警告: 紀錄目標 {item} 為負數，當前: {current_amount}，目標: {current_amount - amount}")
+            new_amount = current_amount - amount
+
+        # 更新或新增庫存
+        self.inventory.update_one(
+            {"item": item},
+            {"$set": {"amount": new_amount}},
+            upsert=True
+        )
+
+        # 寫入當天的紀錄表
+        record = {
+            "type": type,
+            "item": item,
+            "amount": amount,
+            "time": time
+        }
+        result = self.collection.insert_one(record)
+        print(f"紀錄 [{type}] {item}*{amount} 成功，紀錄 ID: {result.inserted_id}")
+        
+    def show_inventory(self):
+        """
+        打印當前庫存
+        """
+        print("倉庫現況：")
+        Doc = self.inventory.find()
+        
+        if Doc != []:
+            for doc in Doc:
+                print(f"    {doc['item']}: {doc['amount']} 件")
+        else:
+            print(f"    倉庫為空")
+
+    @property
+    def __today_collection(self):
+        """當日資料表"""
+        return self.db[f"{datetime.date.today()}"]
+        
+        
+if __name__ == '__main__':
+    depot = Depot()
