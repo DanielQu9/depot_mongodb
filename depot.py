@@ -41,9 +41,11 @@ class Depot:
         """
         
         if type not in ("in", "out"):
-            raise ValueError("警告: type 必須是 'in' 或 'out'")
+            print("警告: type 必須是 'in' 或 'out'，已忽略此筆。")
+            return None
         if not isinstance(amount, int) or amount <= 0:
-            raise ValueError("警告: amount 必須是正整數")
+            print("警告: amount 必須是正整數，已忽略此筆。")
+            return None
         if time is None:
             time = datetime.datetime.now()
 
