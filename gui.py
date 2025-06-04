@@ -203,6 +203,9 @@ class WarehouseGUI:
         """
         重新從倉庫函式庫抓取最新剩餘量，並覆寫到主視窗的 Text 物件。
         """
+        # 啟用編輯
+        self.inventory_text.config(state="normal")
+        
         # 清空舊內容
         self.inventory_text.delete("1.0", tk.END)
         
@@ -212,6 +215,9 @@ class WarehouseGUI:
         if inventory != None:
             for item in inventory:
                 self.inventory_text.insert(tk.END, f"{item["item"]}: {item["amount"]}\n")
+        
+        # 鎖定編輯
+        self.inventory_text.config(state="disabled")
 
 if __name__ == "__main__":
     root = tk.Tk()
