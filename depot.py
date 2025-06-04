@@ -115,6 +115,10 @@ class Depot:
         }
         result = self.collection.insert_one(record)
         print(f"紀錄 [{type}] {item}*{amount} 成功，紀錄 ID: {result.inserted_id}")
+        
+        # 刪除歸零倉庫位
+        if (new_amount == 0):
+            self.inventory.delete_one({"amount":0})
     
     @property
     def __today_collection(self):
