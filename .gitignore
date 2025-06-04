@@ -9,4 +9,5 @@ Thumbs.db
 test.py
 *.pyc
 __pycache__/
+test/
 .env
