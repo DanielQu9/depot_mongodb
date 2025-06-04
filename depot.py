@@ -6,8 +6,12 @@ from pymongo import MongoClient
 class Depot:
     """
     倉庫紀錄\n
-    - write 寫入\n
+    - write 直接寫入\n
     - show_inventory 讀取當前狀態\n
+    - seed_keep 寄送已打包的紀錄\n
+    - claer_keep 清除打包紀錄\n
+    
+    檢視已打包資料: print(Depot.keep_list)
     """
     def __init__(self) -> None:
         # 連線
@@ -18,10 +22,13 @@ class Depot:
         self.inventory = self.db["inventory"]       # 倉庫
         self.collection = self.__today_collection   # 交易紀錄
         
+        self.keep_list: list = []
+        
     def write(self,
               type: Literal["in", "out"],
               item: str,
               amount: int,
+              keep: bool=False,
               time=None
     ) -> None:
         """
@@ -29,11 +36,9 @@ class Depot:
         type: 'in' or 'out'\n
         item: 商品名稱\n
         amount: 數量（正整數）\n
+        keep: 是/否 將打包後寫入\n
         time: 時間（可選，預設為現在時間）\n
         """
-        
-        # 重新獲取日期
-        self.collection = self.__today_collection
         
         if type not in ("in", "out"):
             raise ValueError("警告: type 必須是 'in' 或 'out'")
@@ -42,6 +47,43 @@ class Depot:
         if time is None:
             time = datetime.datetime.now()
 
+        if keep:
+            self.keep_list.append((type, item, amount, time))
+        else:
+            self.__write_to_db(type, item, amount, time)
+            
+    def show_inventory(self):
+        """
+        打印當前庫存
+        """
+        print("倉庫現況：")
+        Doc = self.inventory.find()
+        
+        if Doc != []:
+            for doc in Doc:
+                print(f"    {doc['item']}: {doc['amount']} 件")
+        else:
+            print(f"    倉庫為空")
+      
+    def send_keep(self):
+        """寄送打包"""
+        if self.keep_list != []:
+            print(f'執行中，共 {len(self.keep_list)} 筆:')
+            for i in self.keep_list:
+                self.__write_to_db(*i)
+            
+            self.clear_keep()
+        else:
+            print(f'目前無打包')
+          
+    def clear_keep(self):
+        """清除打包"""
+        self.keep_list = []
+
+    def __write_to_db(self, type, item, amount, time):
+        # 重新獲取日期
+        self.collection = self.__today_collection
+        
         # 取得現有庫存
         item_doc = self.inventory.find_one({"item": item})
         current_amount = item_doc["amount"] if item_doc else 0
@@ -69,20 +111,7 @@ class Depot:
         }
         result = self.collection.insert_one(record)
         print(f"紀錄 [{type}] {item}*{amount} 成功，紀錄 ID: {result.inserted_id}")
-        
-    def show_inventory(self):
-        """
-        打印當前庫存
-        """
-        print("倉庫現況：")
-        Doc = self.inventory.find()
-        
-        if Doc != []:
-            for doc in Doc:
-                print(f"    {doc['item']}: {doc['amount']} 件")
-        else:
-            print(f"    倉庫為空")
-
+    
     @property
     def __today_collection(self):
         """當日資料表"""
