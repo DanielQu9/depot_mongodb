@@ -6,10 +6,10 @@ from pymongo import MongoClient
 class Depot:
     """
     倉庫紀錄\n
-    - write 直接寫入\n
-    - show_inventory 讀取當前狀態\n
+    - write 將紀錄寫入資料庫\n
+    - show_inventory 打印當前倉庫\n
+    - get_inventory 輸出當前倉庫\n
     - seed_keep 寄送已打包的紀錄\n
-    - claer_keep 清除打包紀錄\n
     
     檢視已打包資料: print(Depot.keep_list)
     """
@@ -51,15 +51,21 @@ class Depot:
             self.keep_list.append((type, item, amount, time))
         else:
             self.__write_to_db(type, item, amount, time)
+    
+    def get_inventory(self):
+        """輸出當前倉庫內容"""
+        Doc = self.inventory.find()
+        if Doc == []:
+            return None
+        else:
+            return Doc
             
     def show_inventory(self):
-        """
-        打印當前庫存
-        """
+        """打印當前庫存內容"""
         print("倉庫現況：")
-        Doc = self.inventory.find()
+        Doc = self.get_inventory()
         
-        if Doc != []:
+        if Doc != None:
             for doc in Doc:
                 print(f"    {doc['item']}: {doc['amount']} 件")
         else:
@@ -72,13 +78,9 @@ class Depot:
             for i in self.keep_list:
                 self.__write_to_db(*i)
             
-            self.clear_keep()
+            self.keep_list = []
         else:
             print(f'目前無打包')
-          
-    def clear_keep(self):
-        """清除打包"""
-        self.keep_list = []
 
     def __write_to_db(self, type, item, amount, time):
         # 重新獲取日期
@@ -92,8 +94,10 @@ class Depot:
             new_amount = current_amount + amount
         elif type == "out":
             if current_amount < amount:
-                raise ValueError(f"警告: 紀錄目標 {item} 為負數，當前: {current_amount}，目標: {current_amount - amount}")
-            new_amount = current_amount - amount
+                print(f"警告: 紀錄目標 {item} 為負數，當前: {current_amount}，目標: {current_amount - amount}，已忽略此筆。")
+                return None
+            else:
+                new_amount = current_amount - amount
 
         # 更新或新增庫存
         self.inventory.update_one(
