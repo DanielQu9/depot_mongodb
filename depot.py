@@ -54,13 +54,17 @@ class Depot:
         else:
             self.__write_to_db(type, item, amount, time)
     
-    def get_inventory(self):
-        """輸出當前倉庫內容"""
+    def get_inventory(self) -> (dict[str, int] | None):
+        """
+        輸出當前倉庫內容\n
+        
+        範例:  {"物品[str]": "數量[int]"}
+        """
         Doc = self.inventory.find()
         if Doc == []:
             return None
         else:
-            return Doc
+            return {items["item"]: items["amount"] for items in Doc}
             
     def show_inventory(self):
         """打印當前庫存內容"""
