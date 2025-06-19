@@ -59,12 +59,18 @@ class WarehouseGUI:
         # 2. 物品名稱 & 數量 輸入框
         lbl_name = ttk.Label(left_frame, text="物品名稱：")
         lbl_qty  = ttk.Label(left_frame, text="數量：")
-        self.entry_name = ttk.Entry(left_frame)
+        # self.entry_name = ttk.Entry(left_frame)  # 名稱輸入
+        self.item_name_var = tk.StringVar()  # 選單變數
+        self.combo_name = ttk.Combobox(left_frame, textvariable=self.item_name_var, state="normal")  # 名稱輸入但有選單
         self.entry_qty  = ttk.Entry(left_frame)
         lbl_name.grid(row=2, column=0, sticky=tk.W, pady=(10,2))
-        self.entry_name.grid(row=3, column=0, columnspan=2, sticky=tk.EW)
+        # self.entry_name.grid(row=3, column=0, columnspan=2, sticky=tk.EW)
+        self.combo_name.grid(row=3, column=0, columnspan=2, sticky=tk.EW)
         lbl_qty.grid(row=4, column=0, sticky=tk.W, pady=(10,2))
         self.entry_qty.grid(row=5, column=0, columnspan=2, sticky=tk.EW)
+        
+        # 2-5. 輸入下拉選單
+        self.update_item_combobox_options()
         
         # 3. 送出 & 重置 按鈕
         btn_submit = ttk.Button(left_frame, text="送出", command=self.add_to_list)
@@ -114,13 +120,14 @@ class WarehouseGUI:
     def reset_inputs(self):
         """清空左側所有輸入欄位及單選按鈕"""
         self.io_var.set("in")
-        self.entry_name.delete(0, tk.END)
+        self.item_name_var.set("")
+        # self.entry_name.delete(0, tk.END)
         self.entry_qty.delete(0, tk.END)
     
     def add_to_list(self):
         """把左側輸入的項目加到右側的清單 (含勾選框)"""
         mode = self.io_var.get()               # "in" 或 "out"
-        name = self.entry_name.get().strip()
+        name = self.item_name_var.get().strip()
         qty_text = self.entry_qty.get().strip()
         if not name or not qty_text.isdigit():
             messagebox.showwarning("輸入錯誤", "請正確填寫「物品名稱」及整數「數量」。")
@@ -183,6 +190,9 @@ class WarehouseGUI:
         # 執行完畢後，更新主視窗的庫存列表
         self.update_main_inventory()
         messagebox.showinfo("完成", "已將勾選項目送出且更新主畫面。")
+        
+        # 更新下拉選單
+        self.update_item_combobox_options()
 
     def remove_checked_items(self):
         """
@@ -211,13 +221,23 @@ class WarehouseGUI:
         
         # 輸出當前倉庫內容
         inventory = self.depot.get_inventory()
-        # 假設 inventory 回傳 dict: { "Apples": 50, "Bananas": 20, ... }
         if inventory != None:
-            for item in inventory:
-                self.inventory_text.insert(tk.END, f"{item["item"]}: {item["amount"]}\n")
+            for item, amount in inventory.items():
+                self.inventory_text.insert(tk.END, f"{item}: {amount}\n")
         
         # 鎖定編輯
         self.inventory_text.config(state="disabled")
+    
+    def update_item_combobox_options(self):
+        """
+        更新副視窗中的下拉選單選項
+        """
+        inventory = self.depot.get_inventory()
+        if inventory != None:
+            combo_temp = []
+            for item in inventory.keys():
+                combo_temp.append(item)
+            self.combo_name['values'] = combo_temp
 
 if __name__ == "__main__":
     root = tk.Tk()
