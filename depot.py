@@ -58,7 +58,10 @@ class Depot:
         """
         輸出當前倉庫內容\n
         建議使用 dict.items() 獲取物品和數量\n
-        範例:  {"物品[str]": "數量[int]"}
+        範例:\n
+         inventory = Depot.get_inventory()\n
+         for name, amount in inventory:\n
+            print(name, amount)\n
         """
         Doc = self.inventory.find()
         if Doc == []:
