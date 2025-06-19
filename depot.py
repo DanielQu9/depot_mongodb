@@ -9,7 +9,7 @@ class Depot:
     - write 將紀錄寫入資料庫\n
     - show_inventory 打印當前倉庫\n
     - get_inventory 輸出當前倉庫\n
-    - seed_keep 寄送已打包的紀錄\n
+    - seed_keep 批量寄送已打包的紀錄\n
     
     檢視已打包資料: print(Depot.keep_list)
     """
@@ -36,7 +36,7 @@ class Depot:
         type: 'in' or 'out'\n
         item: 商品名稱\n
         amount: 數量（正整數）\n
-        keep: 是/否 將打包後寫入\n
+        keep: 是/否 打包後批量寫入\n
         time: 時間（可選，預設為現在時間）\n
         """
         
@@ -81,7 +81,7 @@ class Depot:
             print(f"    倉庫為空")
       
     def send_keep(self):
-        """寄送打包"""
+        """打已打包紀錄批量送出"""
         if self.keep_list != []:
             print(f'執行中，共 {len(self.keep_list)} 筆:')
             for i in self.keep_list:
