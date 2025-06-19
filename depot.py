@@ -72,8 +72,8 @@ class Depot:
         Doc = self.get_inventory()
         
         if Doc != None:
-            for doc in Doc:
-                print(f"    {doc['item']}: {doc['amount']} 件")
+            for item, amount in Doc.items():
+                print(f"    {item}: {amount} 件")
         else:
             print(f"    倉庫為空")
       
