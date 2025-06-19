@@ -57,7 +57,7 @@ class Depot:
     def get_inventory(self) -> (dict[str, int] | None):
         """
         輸出當前倉庫內容\n
-        
+        建議使用 dict.items() 獲取物品和數量\n
         範例:  {"物品[str]": "數量[int]"}
         """
         Doc = self.inventory.find()
