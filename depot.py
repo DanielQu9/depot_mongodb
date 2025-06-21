@@ -115,7 +115,7 @@ class Depot:
             {"item": item},
             {"$set": {
                 "amount": new_amount,
-                "tag": None
+                "tag": {}
                 }
              },
             upsert=True
@@ -141,14 +141,12 @@ class Depot:
         item: 物品名稱\n
         tag: 插入標籤\n
         """
-        self.inventory.update_one(
-            {"item": item},
-            {"$set": {
-                "tag": tag
-                }
-             },
-            upsert=True
-        )
+        for name, value in tag.items():
+            self.inventory.update_one(
+                {"item": item},
+                {"$set": {f"tag.{name}": value}},
+                upsert=True
+            )
     
     @property
     def __today_collection(self):
@@ -162,5 +160,5 @@ if __name__ == '__main__':
     # 更新: 補上tag欄位
     depot.inventory.update_many(
     {"tag": {"$exists": False}},
-    {"$set": {"tag": None}}
+    {"$set": {"tag": {}}}
     )
