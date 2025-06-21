@@ -10,6 +10,7 @@ class Depot:
     - show_inventory 打印當前倉庫\n
     - get_inventory 輸出當前倉庫\n
     - seed_keep 批量寄送已打包的紀錄\n
+    - set_tag 設定tag標籤\n
     
     檢視已打包資料: print(Depot.keep_list)
     """
@@ -112,7 +113,11 @@ class Depot:
         # 更新或新增庫存
         self.inventory.update_one(
             {"item": item},
-            {"$set": {"amount": new_amount}},
+            {"$set": {
+                "amount": new_amount,
+                "tag": None
+                }
+             },
             upsert=True
         )
 
@@ -130,6 +135,21 @@ class Depot:
         if (new_amount == 0 and self.is_clear_zero):
             self.inventory.delete_one({"amount":0})
     
+    def set_tag(self, item: str, tag: dict) -> None:
+        """
+        為倉庫資料插入tag屬性\n
+        item: 物品名稱\n
+        tag: 插入標籤\n
+        """
+        self.inventory.update_one(
+            {"item": item},
+            {"$set": {
+                "tag": tag
+                }
+             },
+            upsert=True
+        )
+    
     @property
     def __today_collection(self):
         """當日資料表"""
@@ -138,3 +158,9 @@ class Depot:
         
 if __name__ == '__main__':
     depot = Depot()
+    
+    # 更新: 補上tag欄位
+    depot.inventory.update_many(
+    {"tag": {"$exists": False}},
+    {"$set": {"tag": None}}
+    )
