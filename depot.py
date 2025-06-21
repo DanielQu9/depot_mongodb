@@ -23,7 +23,7 @@ class Depot:
         self.collection = self.__today_collection   # 交易紀錄
         
         self.keep_list: list = []
-        self.clear_zero: bool = True  # 是否清除已歸零的倉位
+        self.is_clear_zero: bool = True  # 是否清除已歸零的倉位
         
     def write(self,
               type: Literal["in", "out"],
@@ -127,7 +127,7 @@ class Depot:
         print(f"紀錄 [{type}] {item}*{amount} 成功，紀錄 ID: {result.inserted_id}")
         
         # 刪除歸零倉庫位
-        if (new_amount == 0 and self.clear_zero):
+        if (new_amount == 0 and self.is_clear_zero):
             self.inventory.delete_one({"amount":0})
     
     @property
