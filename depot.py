@@ -115,11 +115,10 @@ class Depot:
         # 更新或新增庫存
         self.inventory.update_one(
             {"item": item},
-            {"$set": {
-                "amount": new_amount,
-                "tag": {}
-                }
-             },
+            {
+                "$set": {"amount": new_amount},
+                "$setOnInsert": {"tag": {}}
+            },
             upsert=True
         )
 
@@ -135,7 +134,15 @@ class Depot:
         
         # 刪除歸零倉庫位
         if (self.find_tag(item, "no_auto_remove") != True) and (new_amount == 0 and self.remove_on_zero):
-            self.inventory.delete_one({"amount":0})
+            self.inventory.delete_one({
+                "item": item,
+                "amount": 0,
+                "$or": [
+                    {"tag.no_auto_remove": {"$ne": True}},
+                    {"tag.no_auto_remove": {"$exists": False}}
+                ]
+            })
+            print(f"移除 空物品 {item} 成功")
     
     def set_tag(self, item: str, tag: dict) -> None:
         """
@@ -146,7 +153,7 @@ class Depot:
         for name, value in tag.items():
             self.inventory.update_one(
                 {"item": item},
-                {"$set": {f"tag.{name}": value}},
+                {"$set": {f"tag": tag}},
                 upsert=True
             )
     
@@ -157,7 +164,9 @@ class Depot:
         tag: 標籤\n
         """
         data = self.inventory.find_one({"item": item})
-        print(data)
+        if data == None:
+            return None
+        return data["tag"].get(tag, None)
     
     @property
     def __today_collection(self):
@@ -168,7 +177,7 @@ class Depot:
 if __name__ == '__main__':
     depot = Depot()
     
-    # 更新: 補上tag欄位
+    # 621更新: 補上tag欄位
     depot.inventory.update_many(
     {"tag": {"$exists": False}},
     {"$set": {"tag": {}}}
