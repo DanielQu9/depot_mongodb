@@ -1,3 +1,4 @@
+import json
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
@@ -28,6 +29,10 @@ class WarehouseGUI:
         # 開啟副視窗按鈕
         btn_open = ttk.Button(main_frame, text="操作", command=self.open_secondary_window)
         btn_open.pack(anchor=tk.CENTER)
+        
+        # 開啟TAG設定按鈕
+        tag_open = ttk.Button(main_frame, text="TAG設定", command=self.open_tag_setting_window)
+        tag_open.pack(anchor=tk.NE)
     
     def open_secondary_window(self):
         """建立並顯示副視窗 (Toplevel)"""
@@ -116,6 +121,69 @@ class WarehouseGUI:
         btn_remove_checked = ttk.Button(right_frame, text="移除已勾選", command=self.remove_checked_items)
         btn_submit_checked.pack(anchor=tk.E, pady=(5, 2))
         btn_remove_checked.pack(anchor=tk.E, pady=(0, 5))
+    
+    def open_tag_setting_window(self):
+        """
+        開啟一個新視窗，編輯所選那一筆的 tag JSON。
+        """
+        win = tk.Toplevel(self.root)
+        win.title("編輯物品 Tag")
+        win.geometry("500x400")
+
+        # ====== 上：選擇品項 ======
+        ttk.Label(win, text="選擇物品：").pack(anchor=tk.W, padx=10, pady=(10, 2))
+
+        selected_name = tk.StringVar()
+        self.tag_combo = ttk.Combobox(win, textvariable=selected_name, state="readonly")
+        self.tag_combo.pack(fill=tk.X, padx=10)
+        
+        # 從倉庫讀取可選品項
+        try:
+            self.update_item_combobox_options()
+        except Exception as e:
+            messagebox.showerror("錯誤", f"無法讀取品項清單：{e}")
+            return
+
+        # ====== 顯示 tag JSON 的 Text ======
+        ttk.Label(win, text="Tag JSON(請務必知道自己在修改什麼):").pack(anchor=tk.W, padx=10, pady=(10, 0))
+        txt = tk.Text(win, height=10)
+        txt.pack(fill=tk.BOTH, expand=True, padx=10, pady=(2,10))
+        
+        # 當選擇品項時 → 載入 tag
+        def on_item_selected(event):
+            name = selected_name.get()
+            try:
+                tag = self.depot.get_tag_json(name)
+                # tag = doc.get("tag", {})
+            except Exception as e:
+                messagebox.showerror("錯誤", f"無法載入資料：{e}")
+                return
+            txt.delete("1.0", tk.END)
+            txt.insert("1.0", json.dumps(tag, ensure_ascii=False, indent=2))
+
+        self.tag_combo.bind("<<ComboboxSelected>>", on_item_selected)
+        
+        # ====== 儲存按鈕 ======
+        def save_tag():
+            name = selected_name.get()
+            if not name:
+                messagebox.showwarning("請選擇物品", "請先從清單中選擇一個物品")
+                return
+            raw = txt.get("1.0", tk.END).strip()
+            try:
+                tag_data = json.loads(raw)
+            except json.JSONDecodeError as e:
+                messagebox.showerror("格式錯誤", f"請輸入正確的 JSON：{e}")
+                return
+            try:
+                self.depot.set_tag(name, tag_data)
+                messagebox.showinfo("完成", f"{name} 的 tag 已更新")
+                win.destroy()
+                self.update_main_inventory()  # 若有需要同步主畫面
+            except Exception as e:
+                messagebox.showerror("更新失敗", f"無法更新 tag：{e}")
+
+        ttk.Button(win, text="儲存", command=save_tag).pack(pady=(0, 10))
     
     def reset_inputs(self):
         """清空左側所有輸入欄位及單選按鈕"""
@@ -233,11 +301,18 @@ class WarehouseGUI:
         更新副視窗中的下拉選單選項
         """
         inventory = self.depot.get_inventory()
-        if inventory != None:
-            combo_temp = []
-            for item in inventory.keys():
-                combo_temp.append(item)
+        if not inventory:
+            return
+
+        combo_temp = list(inventory.keys())
+
+        # 如果 secondary window 的 combo_name 存在且視窗尚在
+        if hasattr(self, 'combo_name') and self.combo_name.winfo_exists():
             self.combo_name['values'] = combo_temp
+
+        # 如果 tag setting window 的 tag_combo 存在且視窗尚在
+        if hasattr(self, 'tag_combo') and self.tag_combo.winfo_exists():
+            self.tag_combo['values'] = combo_temp
 
 if __name__ == "__main__":
     root = tk.Tk()
