@@ -168,6 +168,16 @@ class Depot:
             return None
         return data["tag"].get(tag, None)
     
+    def get_tag_json(self, item: str) -> (dict | None):
+        """
+        返回tag表\n
+        item: 物品名稱\n
+        """
+        data = self.inventory.find_one({"item": item})
+        if data == None:
+            return None
+        return dict(data).get("tag", {})
+    
     @property
     def __today_collection(self):
         """當日資料表"""
