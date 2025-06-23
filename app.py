@@ -10,7 +10,7 @@ depot = Depot()
 @app.route('/')
 def index():
     inventory = depot.get_inventory()
-    items = list(inventory.keys()) if inventory != None else None
+    items = list(inventory.keys()) if inventory else None
     return render_template('index.html', items=items)
 
 @app.route('/api/data')
@@ -22,9 +22,9 @@ def api_data():
     inventory = depot.get_inventory()
     # 明確指定要查 tag 的 item
     tag = depot.get_tag_json(item)
-    count = inventory.get(item, 0) if inventory != None else 0
-    unit_w = tag.get('unit_weight', 0) if tag != None else 0
-    min_w = tag.get('min_weight_warning', 0) if tag != None else 0
+    count = inventory.get(item, 0) if inventory else 0
+    unit_w = tag.get('unit_weight', 0) if tag else None
+    min_w = tag.get('min_weight_warning', 0) if tag else None
     return jsonify({
         'item': item,
         'count': count,
