@@ -156,12 +156,11 @@ class Depot:
             print(f"警告: 倉庫內未找到 {item} 請確認已添加物品，已忽略此筆。")
             return None
         
-        for name, value in tag.items():
-            self.inventory.update_one(
-                {"item": item},
-                {"$set": {f"tag": tag}},
-                upsert=True
-            )
+        self.inventory.update_one(
+            {"item": item},
+            {"$set": {f"tag": tag}},
+            upsert=True
+        )
     
     def find_tag(self, item: str, tag: str) -> Any:
         """
