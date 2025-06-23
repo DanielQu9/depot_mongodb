@@ -12,6 +12,7 @@ class Depot:
     - seed_keep 批量寄送已打包的紀錄\n
     - set_tag 設定tag標籤\n
     - find_tag 搜尋tag標籤\n
+    - get_tag_json 取得該物品的tag頁\n
     
     檢視已打包資料: print(Depot.keep_list)\n
     可設定 Depot.remove_on_zero 進行移除等於零的欄位\n
