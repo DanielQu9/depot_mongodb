@@ -72,7 +72,7 @@ class Depot:
         if Doc == []:
             return None
         else:
-            return {items["item"]: items["amount"] for items in Doc}
+            return {items["item"]: items.get("amount", -1) for items in Doc}
             
     def show_inventory(self) -> None:
         """打印當前庫存內容"""
@@ -151,6 +151,11 @@ class Depot:
         item: 物品名稱\n
         tag: 插入標籤\n
         """
+        data = self.inventory.find_one({"item": item})
+        if data == None:
+            print(f"警告: 倉庫內未找到 {item} 請確認已添加物品，已忽略此筆。")
+            return None
+        
         for name, value in tag.items():
             self.inventory.update_one(
                 {"item": item},
