@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>物品重量管理</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #afafb8;
+            color: #333;
+            display: flex;
+        }
+        .sidebar {
+            width: 250px;
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            transition: transform 0.3s ease;
+        }
+        .sidebar.hidden {
+            transform: translateX(-100%);
+        }
+        .toggle-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: #2980b9;
+            color: white;
+            padding: 5px 10px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+        }
+        .main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            padding: 40px;
+        }
+        select, button {
+            font-size: 1em;
+            padding: 6px;
+            margin: 10px 0;
+        }
+        .preview-item {
+            font-size: 1em;
+            margin: 5px 0;
+        }
+        .weight {
+            font-size: 2em;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        .alert {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+        <h2>設定物品</h2>
+        <label for="itemSelect">選擇物品：</label>
+        <select id="itemSelect">
+            <option value="">-- 請選擇 --</option>
+            {% for it in items %}
+            <option value="{{ it }}">{{ it }}</option>
+            {% endfor %}
+        </select>
+
+        <div id="previewArea">
+            <p class="preview-item">尚未選擇物品。</p>
+        </div>
+    </div>
+
+    <div class="main">
+        <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+        <h1>物品重量顯示</h1>
+        <div id="weightDisplay" class="weight">--</div>
+    </div>
+
+    <script>
+        let selectedItem = "";
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('hidden');
+        }
+
+        document.getElementById('itemSelect').addEventListener('change', () => {
+            selectedItem = document.getElementById('itemSelect').value;
+            updatePreview();
+        });
+
+        async function updatePreview() {
+            if (!selectedItem) {
+                document.getElementById('previewArea').innerHTML = '<p class="preview-item">尚未選擇物品。</p>';
+                document.getElementById('weightDisplay').innerText = '--';
+                return;
+            }
+            const resp = await fetch(`/api/data?item=${encodeURIComponent(selectedItem)}`);
+            const data = await resp.json();
+            const preview = document.getElementById('previewArea');
+            preview.innerHTML = `
+                <p class="preview-item">物品: ${data.item}</p>
+                <p class="preview-item">個數: ${data.count}</p>
+                <p class="preview-item">單位重量: ${data.unit_weight}g/個</p>
+                <p class="preview-item">警示重量: ${data.min_weight}g</p>
+            `;
+        }
+
+        async function fetchAndUpdateWeight() {
+            if (!selectedItem) return;
+            const resp = await fetch(`/api/data?item=${encodeURIComponent(selectedItem)}`);
+            const data = await resp.json();
+            const total = data.count * data.unit_weight;
+            const el = document.getElementById('weightDisplay');
+            el.innerText = `${data.item}: ${total} (g)`;
+            if (total < data.min_weight) {
+                el.classList.add('alert');
+            } else {
+                el.classList.remove('alert');
+            }
+        }
+
+        setInterval(fetchAndUpdateWeight, 1000);
+    </script>
+</body>
+</html>
