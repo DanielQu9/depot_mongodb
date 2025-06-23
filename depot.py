@@ -11,7 +11,6 @@ class Depot:
     - get_inventory 輸出當前倉庫\n
     - seed_keep 批量寄送已打包的紀錄\n
     - set_tag 設定tag標籤\n
-    - find_tag 搜尋tag標籤\n
     - get_tag_json 取得該物品的tag頁\n
     
     檢視已打包資料: print(Depot.keep_list)\n
@@ -134,7 +133,8 @@ class Depot:
         print(f"紀錄 [{type}] {item}*{amount} 成功，紀錄 ID: {result.inserted_id}")
         
         # 刪除歸零倉庫位
-        if (self.find_tag(item, "no_auto_remove") != True) and (new_amount == 0 and self.remove_on_zero):
+        no_auto_remove = self.get_tag_json(item)
+        if ((no_auto_remove.get("no_auto_remove") if no_auto_remove is not None else False) != True) and (new_amount == 0 and self.remove_on_zero):
             self.inventory.delete_one({
                 "item": item,
                 "amount": 0,
@@ -145,7 +145,7 @@ class Depot:
             })
             print(f"移除 空物品 {item} 成功")
     
-    def set_tag(self, item: str, tag: dict) -> None:
+    def set_tag(self, item: str, tag: dict[str, Any]) -> None:
         """
         為倉庫資料插入tag屬性\n
         item: 物品名稱\n
@@ -162,25 +162,16 @@ class Depot:
             upsert=True
         )
     
-    def find_tag(self, item: str, tag: str) -> Any:
-        """
-        搜尋資料tag並返回該值\n
-        item: 物品名稱\n
-        tag: 標籤\n
-        """
-        data = self.inventory.find_one({"item": item})
-        if data == None:
-            return None
-        return data["tag"].get(tag, None)
-    
-    def get_tag_json(self, item: str) -> (dict | None):
+    def get_tag_json(self, item: str) -> (dict[str, Any] | None):
         """
         返回tag表\n
         item: 物品名稱\n
         """
         data = self.inventory.find_one({"item": item})
         if data == None:
+            print(f"警告: 倉庫內未找到 {item} 請確認已添加物品，已忽略此筆。")
             return None
+        
         return dict(data).get("tag", {})
     
     @property
