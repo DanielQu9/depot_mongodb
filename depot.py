@@ -9,6 +9,7 @@ class Depot:
     - write 將紀錄寫入資料庫\n
     - show_inventory 打印當前倉庫\n
     - get_inventory 輸出當前倉庫\n
+    - in_inventory 該資料是否存在\n
     - seed_keep 批量寄送已打包的紀錄\n
     - set_tag 設定tag標籤\n
     - get_tag_json 取得該物品的tag頁\n
@@ -173,6 +174,16 @@ class Depot:
             return None
         
         return dict(data).get("tag", {})
+    
+    def in_inventory(self, item: str) -> bool:
+        """
+        檢查該物品是否存在於倉庫內\n
+        item: 物品名稱\n
+        """ 
+        if self.inventory.find_one({"item": item}) is None:
+            print(f"警告: 倉庫內未找到 {item} 請確認已添加物品，已忽略此筆。")
+            return False
+        return True
     
     @property
     def __today_collection(self):
