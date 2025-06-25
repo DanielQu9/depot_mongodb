@@ -7,7 +7,7 @@
         body {
             font-family: Arial, sans-serif;
             margin: 0;
-            background: #afafb8;
+            background: #b2b2bc;
             color: #333;
             display: flex;
         }
@@ -31,6 +31,7 @@
             cursor: pointer;
             border: none;
             border-radius: 4px;
+            z-index: 1000;
         }
         .main {
             flex: 1;
@@ -38,8 +39,7 @@
             justify-content: center;
             align-items: center;
             flex-direction: column;
-            padding: 40px;
-            padding-top: 80px;
+            padding: 80px 40px 40px 40px;
         }
         select, button {
             font-size: 1em;
@@ -58,12 +58,26 @@
         .alert {
             color: red;
         }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #333;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .toast.show {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
     <div class="sidebar" id="sidebar">
-        <br />
-        <br />
+        <br \>
+        <br \>
         <h2>設定物品</h2>
         <label for="itemSelect">選擇物品：</label>
         <select id="itemSelect">
@@ -80,12 +94,15 @@
 
     <div class="main">
         <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
-        <h1>物品重量顯示</h1>
+        <h1 style="margin-top: 40px;">物品重量顯示</h1>
         <div id="weightDisplay" class="weight">--</div>
     </div>
 
+    <div id="toast" class="toast"></div>
+
     <script>
         let selectedItem = "";
+        let currentWeight = null;
 
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
@@ -101,6 +118,7 @@
             if (!selectedItem) {
                 document.getElementById('previewArea').innerHTML = '<p class="preview-item">尚未選擇物品。</p>';
                 document.getElementById('weightDisplay').innerText = '--';
+                currentWeight = null;
                 return;
             }
             const resp = await fetch(`/api/data?item=${encodeURIComponent(selectedItem)}`);
@@ -114,18 +132,52 @@
             `;
         }
 
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.innerText = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        function animateWeightChange(from, to, duration = 500) {
+            const el = document.getElementById('weightDisplay');
+            const steps = 20;
+            let step = 0;
+            const increment = (to - from) / steps;
+            const interval = duration / steps;
+
+            const animate = setInterval(() => {
+                const value = from + increment * step;
+                el.innerText = `${selectedItem}: ${value.toFixed(2)} (g)`;
+                step++;
+                if (step > steps) {
+                    clearInterval(animate);
+                    el.innerText = `${selectedItem}: ${to.toFixed(2)} (g)`;
+                }
+            }, interval);
+        }
+
         async function fetchAndUpdateWeight() {
             if (!selectedItem) return;
             const resp = await fetch(`/api/data?item=${encodeURIComponent(selectedItem)}`);
             const data = await resp.json();
             const total = data.count * data.unit_weight;
             const el = document.getElementById('weightDisplay');
-            el.innerText = `${data.item}: ${total} (g)`;
+
+            if (currentWeight !== null && total !== currentWeight) {
+                animateWeightChange(currentWeight, total);
+                showToast(`重量已變更為 ${total} g`);
+            } else {
+                el.innerText = `${data.item}: ${total} (g)`;
+            }
+
             if (total < data.min_weight) {
                 el.classList.add('alert');
             } else {
                 el.classList.remove('alert');
             }
+
+            currentWeight = total;
         }
 
         setInterval(fetchAndUpdateWeight, 1000);
