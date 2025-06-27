@@ -11,3 +11,4 @@ test.py
 __pycache__/
 test/
 .env
+note.txt
