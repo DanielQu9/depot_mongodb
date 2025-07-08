@@ -1,5 +1,5 @@
-import datetime
-from typing import Literal, Any
+from datetime import datetime, date
+from typing import Literal, Any, Iterator
 from pymongo import MongoClient
 
 
@@ -24,14 +24,14 @@ class DepotItem:
         if not isinstance(amount, int) or amount <= 0:
             raise DepotError("警告: amount 必須是正整數，已忽略此筆。", "amount")
         if time is None:
-            time = datetime.datetime.now()
+            time = datetime.now()
 
-        self.type = type
-        self.item = item
-        self.amount = amount
-        self.time = time
+        self.type: Literal["in", "out"] = type
+        self.item: str = item
+        self.amount: int = amount
+        self.time: datetime = time
 
-    def __iter__(self):
+    def __iter__(self) -> Any:
         return iter((self.type, self.item, self.amount, self.time))
 
 
@@ -107,7 +107,13 @@ class Depot:
         else:
             print(f"    倉庫為空")
 
-    def __write_to_db(self, type, item, amount, time):
+    def __write_to_db(
+        self,
+        type: Literal["in", "out"],
+        item: str,
+        amount: int,
+        time: datetime,
+    ) -> None:
         # 重新獲取日期
         self.collection = self.__today_collection
 
@@ -197,7 +203,7 @@ class Depot:
     @property
     def __today_collection(self):
         """當日資料表"""
-        return self.db[f"{datetime.date.today()}"]
+        return self.db[f"{date.today()}"]
 
 
 if __name__ == "__main__":
