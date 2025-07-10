@@ -12,8 +12,8 @@ if __name__ == "__main__":
         os.system(f"start cmd /k cloudflared tunnel run --token {line}")
         os.system(f"start cmd /k cloudflared tunnel run --token {web}")
     else:
-        cmd_line = f"cloudflared tunnel run --token {line} && read"
-        cmd_web = f"cloudflared tunnel run --token {line} && read"
+        cmd_line = f"cloudflared tunnel run --token {line}"
+        cmd_web = f"cloudflared tunnel run --token {line}"
 
         for c in [cmd_line, cmd_web]:
             apple_script = f"""
