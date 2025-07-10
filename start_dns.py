@@ -9,11 +9,11 @@ if __name__ == "__main__":
     web = env["WEB_DNS_TOKEN"]
 
     if os.name == "nt":
-        os.system(f"start cmd /k tunnel run --token {line}")
-        os.system(f"start cmd /k tunnel run --token {web}")
+        os.system(f"start cmd /k cloudflared tunnel run --token {line}")
+        os.system(f"start cmd /k cloudflared tunnel run --token {web}")
     else:
-        cmd_line = f"tunnel run --token {line} && read"
-        cmd_web = f"tunnel run --token {line} && read"
+        cmd_line = f"cloudflared tunnel run --token {line} && read"
+        cmd_web = f"cloudflared tunnel run --token {line} && read"
 
         for c in [cmd_line, cmd_web]:
             apple_script = f"""
