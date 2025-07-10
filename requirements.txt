@@ -1,2 +1,7 @@
+# main
 pymongo
+
+# web
 flask
+line-bot-sdk
+python-dotenv
