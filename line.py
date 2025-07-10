@@ -1,117 +1,84 @@
 from flask import Flask, request, abort
-from dotenv import dotenv_values
-from linebot.v3 import WebhookHandler
-from linebot.v3.webhooks import MessageEvent, TextMessageContent
-from linebot.v3.messaging import (
-    Configuration,
-    ApiClient,
-    MessagingApi,
-    ReplyMessageRequest,
+from linebot import LineBotApi, WebhookHandler
+from linebot.exceptions import InvalidSignatureError
+from linebot.models import (
+    MessageEvent,
     TextMessage,
+    TextSendMessage,
+    FlexSendMessage,
+    URIAction,
+    MessageAction,
+    BubbleContainer,
+    BoxComponent,
+    TextComponent,
+    ButtonComponent,
 )
-from linebot.v3.messaging.models import FlexMessage
-import json
+from dotenv import dotenv_values
 
 
 app = Flask(__name__)
 
-# read env
 env = dotenv_values()
-channel_secret = env["LINE_CHANNEL_SECRET"]
-channel_access_token = env["LINE_CHANNEL_ACCESS_TOKEN"]
-
-# 設定 handler 與 API
-handler = WebhookHandler(channel_secret)
-configuration = Configuration(access_token=channel_access_token)
+line_bot_api = LineBotApi(env["LINE_CHANNEL_ACCESS_TOKEN"])
+handler = WebhookHandler(env["LINE_CHANNEL_SECRET"])
 
 
 @app.route("/callback", methods=["POST"])
 def callback():
-    signature = request.headers.get("X-Line-Signature")
+    signature = request.headers["X-Line-Signature"]
     body = request.get_data(as_text=True)
 
     try:
         handler.handle(body, signature)
-    except Exception as e:
-        print(f"Error: {e}")
+    except InvalidSignatureError:
         abort(400)
     return "OK"
 
 
-@handler.add(MessageEvent, message=TextMessageContent)
+@handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     msg = event.message.text.strip()
-    reply_token = event.reply_token
 
-    if msg == "help":
-        try:
-            with open("./templates/bothelp.txt", "r", encoding="utf-8") as f:
-                help_text = f.read()
-        except FileNotFoundError:
-            help_text = "找不到說明文件 🤔"
-        reply = TextMessage(text=help_text, quickReply=None, quoteToken=None)
-
-    elif msg == "web":
-        reply = TextMessage(
-            text="🌐 前往網站：https://example.com", quickReply=None, quoteToken=None
+    if msg.startswith("!"):  # 指令區域，未處理這邊可擴充
+        line_bot_api.reply_message(
+            event.reply_token, TextSendMessage(text="指令功能尚未實作")
         )
+        return
 
-    elif msg == "test":
-        bubble_json = {  # 上面那段 JSON 貼到這裡
-            "type": "bubble",
-            "body": {
-                "type": "box",
-                "layout": "vertical",
-                "contents": [
-                    {
-                        "type": "text",
-                        "text": "Hello, Bubble!",
-                        "weight": "bold",
-                        "size": "xl",
-                        "align": "center",
-                    },
-                    {
-                        "type": "text",
-                        "text": "這是一個簡易的測試訊息。",
-                        "size": "md",
-                        "wrap": True,
-                        "margin": "md",
-                    },
-                ],
-            },
-            "footer": {
-                "type": "box",
-                "layout": "vertical",
-                "contents": [
-                    {
-                        "type": "button",
-                        "style": "primary",
-                        "action": {
-                            "type": "message",
-                            "label": "點我回覆",
-                            "text": "我按了按鈕👍",
-                        },
-                    }
-                ],
-            },
-        }
+    # 非指令 → 顯示功能選單 Bubble
+    bubble = BubbleContainer(
+        body=BoxComponent(
+            layout="vertical",
+            contents=[
+                TextComponent(
+                    text="📋 功能選單", weight="bold", size="xl", align="center"
+                ),
+            ],
+        ),
+        footer=BoxComponent(
+            layout="vertical",
+            contents=[
+                ButtonComponent(
+                    style="primary",
+                    action=MessageAction(
+                        label="檢查網站狀態", text="!check_site"
+                    ),  # 佔位功能
+                ),
+                ButtonComponent(
+                    style="link",
+                    action=URIAction(label="前往網站", uri="http://depot-web.dx-q.net"),
+                ),
+                ButtonComponent(
+                    style="secondary",
+                    action=MessageAction(label="（佔位按鈕）", text="!todo"),
+                ),
+            ],
+            spacing="md",
+        ),
+    )
 
-        reply = FlexMessage(
-            altText="Bubble 測試", contents=bubble_json, quickReply=None
-        )
-
-    else:
-        reply = TextMessage(
-            text=f"輸入 help 以查閱指令表", quickReply=None, quoteToken=None
-        )
-
-    with ApiClient(configuration) as api_client:
-        messaging_api = MessagingApi(api_client)
-        messaging_api.reply_message(
-            ReplyMessageRequest(
-                replyToken=reply_token, messages=[reply], notificationDisabled=True
-            )
-        )
+    flex = FlexSendMessage(alt_text="功能選單", contents=bubble)
+    line_bot_api.reply_message(event.reply_token, flex)
 
 
 if __name__ == "__main__":
