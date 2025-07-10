@@ -61,17 +61,17 @@ def handle_message(event):
                 ButtonComponent(
                     style="primary",
                     action=MessageAction(
-                        label="檢查網站狀態", text="!check_site"
+                        label="檢視倉庫狀態", text="!check"
                     ),  # 佔位功能
                 ),
                 ButtonComponent(
                     style="link",
                     action=URIAction(label="前往網站", uri="http://depot-web.dx-q.net"),
                 ),
-                ButtonComponent(
-                    style="secondary",
-                    action=MessageAction(label="（佔位按鈕）", text="!todo"),
-                ),
+                # ButtonComponent(
+                #     style="secondary",
+                #     action=MessageAction(label="（佔位按鈕）", text="!todo"),
+                # ),
             ],
             spacing="md",
         ),
