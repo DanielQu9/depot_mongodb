@@ -87,8 +87,11 @@ class Depot:
         建議使用 dict.items() 獲取物品和數量\n
         範例:\n
          inventory = Depot.get_inventory()\n
-         for name, amount in inventory:\n
-            print(name, amount)\n
+         if inventory is None:
+            ...
+         else:
+            for name, amount in inventory:
+                print(name, amount)
         """
         Doc = self.inventory.find()
         if Doc == []:
