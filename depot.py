@@ -90,7 +90,7 @@ class Depot:
          if inventory is None:
             ...
          else:
-            for name, amount in inventory:
+            for name, amount in inventory.items():
                 print(name, amount)
         """
         Doc = self.inventory.find()
