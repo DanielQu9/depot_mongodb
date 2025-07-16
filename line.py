@@ -68,7 +68,7 @@ def handle_message(event):
                     action=MessageAction(label="檢視倉庫狀態", text="!check"),
                 ),
                 ButtonComponent(
-                    style="link",
+                    style="secondary",
                     action=URIAction(label="前往網站", uri="http://depot-web.dx-q.net"),
                 ),
                 # ButtonComponent(
