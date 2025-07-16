@@ -75,7 +75,7 @@ class Depot:
         self.inventory = self.db["inventory"]  # 倉庫
         self.collection = self.__today_collection  # 交易紀錄
 
-        self.remove_on_zero: bool = True  # 是否清除已歸零的倉位
+        self.remove_on_zero: bool = False  # 是否清除已歸零的倉位
 
     def write(self, item: DepotItem) -> None:
         """新增一筆進出貨資料"""
@@ -148,25 +148,26 @@ class Depot:
 
         # 刪除歸零倉庫位
         no_auto_remove = self.get_tag_json(item)
-        if (
-            (
-                no_auto_remove.get("no_auto_remove")
-                if no_auto_remove is not None
-                else False
-            )
-            != True
-        ) and (new_amount == 0 and self.remove_on_zero):
-            self.inventory.delete_one(
-                {
-                    "item": item,
-                    "amount": 0,
-                    "$or": [
-                        {"tag.no_auto_remove": {"$ne": True}},
-                        {"tag.no_auto_remove": {"$exists": False}},
-                    ],
-                }
-            )
-            print(f"移除 空物品 {item} 成功")
+        if self.remove_on_zero:
+            if (
+                (
+                    no_auto_remove
+                    if no_auto_remove is None
+                    else no_auto_remove.get("no_auto_remove")
+                )
+                != True
+            ) and (new_amount == 0):
+                self.inventory.delete_one(
+                    {
+                        "item": item,
+                        "amount": 0,
+                        "$or": [
+                            {"tag.no_auto_remove": {"$ne": True}},
+                            {"tag.no_auto_remove": {"$exists": False}},
+                        ],
+                    }
+                )
+                print(f"移除 空物品 {item} 成功")
 
     def set_tag(self, item: str, tag: dict[str, Any]) -> None:
         """
