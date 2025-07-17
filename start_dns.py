@@ -5,17 +5,14 @@ import subprocess
 
 if __name__ == "__main__":
     env = dotenv_values()
-    line = env["LINE_DNS_TOKEN"]
-    web = env["WEB_DNS_TOKEN"]
+    line = f'cloudflared tunnel run --token {env["LINE_DNS_TOKEN"]}'
+    web = f'cloudflared tunnel run --token {env["WEB_DNS_TOKEN"]}'
 
     if os.name == "nt":
-        os.system(f"start cmd /k cloudflared tunnel run --token {line}")
-        os.system(f"start cmd /k cloudflared tunnel run --token {web}")
+        os.system(f"start cmd /k {line}")
+        os.system(f"start cmd /k {web}")
     else:
-        cmd_line = f"cloudflared tunnel run --token {line}"
-        cmd_web = f"cloudflared tunnel run --token {web}"
-
-        for c in [cmd_line, cmd_web]:
+        for c in [line, web]:
             apple_script = f"""
             tell application "Terminal"
                 do script "{c}"
