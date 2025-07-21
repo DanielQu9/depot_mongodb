@@ -15,9 +15,13 @@ class WarehouseGUI:
         main_frame = ttk.Frame(self.root, padding=10)
         main_frame.pack(fill=tk.BOTH, expand=True)
 
+        # title 區塊
+        title_frame = ttk.Frame(main_frame)
+        title_frame.pack(fill=tk.X)
+
         # Label 標題
-        lbl = ttk.Label(main_frame, text="倉庫剩餘量", font=("Arial", 14))
-        lbl.pack(anchor=tk.W)
+        lbl = ttk.Label(title_frame, text="倉庫剩餘量", font=("Arial", 14))
+        lbl.pack(side=tk.LEFT)
 
         # 用 Text widget 放倉庫剩餘量 (可換成 Treeview 或 Listbox)
         self.inventory_text = tk.Text(
@@ -38,6 +42,12 @@ class WarehouseGUI:
             main_frame, text="TAG設定", command=self.open_tag_setting_window
         )
         tag_open.pack(anchor=tk.NE)
+
+        # 重新整理按鈕
+        btn_refresh = ttk.Button(
+            title_frame, text="🔄", command=self.update_main_inventory
+        )
+        btn_refresh.pack(side=tk.RIGHT)
 
     def open_secondary_window(self):
         """建立並顯示副視窗 (Toplevel)"""
