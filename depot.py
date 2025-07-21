@@ -9,18 +9,25 @@ class DepotItem:
     """
 
     def __init__(
-        self, type: Literal["in", "out"], item: str, amount: int, time=None
+        self, type: Literal["in", "out", "auto"], item: str, amount: int, time=None
     ) -> None:
         """
-        type: 'in' or 'out'\n
+        type: 'in' or 'out' or 'auto'(自動辨識正負數)\n
         item: 商品名稱\n
         amount: 數量（正整數）\n
         time: 時間（可選，預設為現在時間）\n
         """
 
         # 格式驗證
-        if type not in ("in", "out"):
+        if type == "auto":
+            if amount <= 0:
+                type = "out"
+                amount *= -1
+            else:
+                type = "in"
+        elif type not in ("in", "out"):
             raise DepotError("警告: type 必須是 'in' 或 'out'，已忽略此筆。", "type")
+
         if not isinstance(amount, int) or amount <= 0:
             raise DepotError("警告: amount 必須是正整數，已忽略此筆。", "amount")
         if time is None:
