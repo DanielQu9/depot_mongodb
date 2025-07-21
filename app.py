@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 from depot import Depot, DepotItem, DepotError
-import threading
 
 
 # ==== 初始化設定 ====
