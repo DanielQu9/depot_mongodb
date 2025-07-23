@@ -14,9 +14,9 @@ def index():
     side_items = [
         {"name": "首頁", "endpoint": "home"},
         {"name": "倉庫", "endpoint": "inventory"},
-        {"name": "出/入貨物", "endpoint": "inventory"},
+        {"name": "出/入貨物", "endpoint": "stock_input"},
         {"name": "貨物紀錄", "endpoint": "records"},
-        {"name": "狀態", "endpoint": "inventory"},
+        {"name": "狀態", "endpoint": "status"},
         # 日後再加頁面，就在這邊添加
     ]
     return render_template("base.html", side_items=side_items)
@@ -48,6 +48,25 @@ def records_data():
     table_name = request.args.get("date")
     data = mg.find_records(str(table_name))
     return render_template("records_data.html", data=data, date=table_name)
+
+
+@app.route("/stock/input")
+def stock_input():
+    inv = depot.get_inventory()
+    existing_items = list(inv.keys()) if inv else None
+    return render_template("stock_input.html", items=existing_items)
+
+
+@app.route("/stock/submit", methods=["POST"])
+def stock_submit():
+    data = request.get_json()
+    try:
+        for stock in data:
+            depot.write(DepotItem(stock["type"], stock["item"], stock["amount"]))
+    except Exception as err:
+        return {"status": "failure", "msg": err}
+
+    return {"status": "success", "count": len(data)}
 
 
 @app.route("/api/data")
