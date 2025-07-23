@@ -69,7 +69,12 @@ def handle_message(event):
                 ),
                 ButtonComponent(
                     style="secondary",
-                    action=URIAction(label="前往網站", uri="http://depot-web.dx-q.net"),
+                    action=URIAction(label="後台網站", uri="http://depot-web.dx-q.net"),
+                ),
+                ButtonComponent(
+                    style="primary",
+                    # action=URIAction(label="前台網站", uri=""),
+                    action=MessageAction(label="前台網站", text="窩不知道網址QQ"),
                 ),
                 # ButtonComponent(
                 #     style="secondary",
