@@ -107,7 +107,7 @@ class Depot:
         if Doc == []:
             return None
         else:
-            return {items["item"]: items.get("amount", -1) for items in Doc}
+            return {items["item"]: items.get("amount", -32768) for items in Doc}
 
     def show_inventory(self) -> None:
         """打印當前庫存內容"""
