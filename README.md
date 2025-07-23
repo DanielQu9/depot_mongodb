@@ -7,7 +7,7 @@
 ## 啟用
 庫管理系統後台 使用 <code>python app.py</code> 執行   
 ~~倉庫管理 使用 <code>python gui.py</code> 執行~~ (停止維護)  
-配置env及隧道 使用 <code>python start_dns.py</code> 執行 
+配置env及隧道 使用 <code>python start_dns.py</code> 執行   
 LineBot開機 使用 <code>python line.py</code> 執行  
   
 ## .env 配置範例:  
