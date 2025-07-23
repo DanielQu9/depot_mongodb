@@ -84,9 +84,9 @@ class Depot:
 
         self.remove_on_zero: bool = False  # 是否清除已歸零的倉位
 
-    def write(self, item: DepotItem) -> None:
+    def write(self, item: DepotItem, source: str = "local") -> None:
         """新增一筆進出貨資料"""
-        self.__write_to_db(*item)
+        self.__write_to_db(*item, source=source)
 
     def get_inventory(self) -> dict[str, int] | None:
         """
@@ -123,6 +123,7 @@ class Depot:
         item: str,
         amount: int,
         time: datetime,
+        source: str,
     ) -> None:
         # 重新獲取日期
         self.collection = self.__today_collection
@@ -149,7 +150,13 @@ class Depot:
         )
 
         # 寫入當天的紀錄表
-        record = {"type": type, "item": item, "amount": amount, "time": time}
+        record = {
+            "type": type,
+            "item": item,
+            "amount": amount,
+            "time": time,
+            "source": source,
+        }
         result = self.collection.insert_one(record)
         print(f"紀錄 [{type}] {item}*{amount} 成功，紀錄 ID: {result.inserted_id}")
 
