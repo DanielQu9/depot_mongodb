@@ -34,12 +34,19 @@ def api_data():
 @app.route("/api/esp_send", methods=["POST"])
 def get_esp_data():
     data = request.get_json()
-    if (not data) or ("item" not in data) or ("amount" not in data):
+    final = data.get("final", False)
+    if (not data) or (final):
         return jsonify({"status": "error", "message": "deta_error"}), 400
 
     # 處理資料
     try:
-        depot.write(DepotItem(type="auto", item=data["item"], amount=data["amount"]))
+        small = DepotItem("out", "small", data["small"])
+        big = DepotItem("out", "big", data["big"])
+        tube = DepotItem("out", "tube", data["tube"])
+
+        depot.write(small, "web")
+        depot.write(big, "web")
+        depot.write(tube, "web")
         print(f"[Depot]-info: write_down")
     except DepotError as err:
         print(f"[Depot]-error: {err}")
