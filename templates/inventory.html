@@ -2,12 +2,30 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>倉庫頁</title>
+  <title>庫存查詢</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet">
 </head>
 <body>
   <div class="container mt-4">
-    <h2>物料庫存</h2>
-    <p>庫存.</p>
+    <h2>📦 目前庫存</h2>
+    <table class="table table-striped mt-3">
+      <thead>
+        <tr>
+          <th>品項</th>
+          <th>數量</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item, qty in items.items() %}
+        <tr>
+          <td>{{ item }}</td>
+          <td>{{ qty }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </body>
 </html>
