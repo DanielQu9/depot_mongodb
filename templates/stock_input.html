@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>進出貨輸入</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet">
+</head>
+<body>
+  <div class="container mt-4">
+    <h2>📦 批量進出貨輸入</h2>
+
+    <!-- 輸入表單 -->
+    <div class="row g-2 align-items-center">
+      <div class="col-auto">
+        <label class="form-label">類型：</label><br>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" name="type" value="in" id="typeIn" checked>
+          <label class="form-check-label" for="typeIn">進貨</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" name="type" value="out" id="typeOut">
+          <label class="form-check-label" for="typeOut">出貨</label>
+        </div>
+      </div>
+
+      <div class="col-auto">
+        <label class="form-label">品項：</label>
+        <input list="itemList" id="itemInput" class="form-control" placeholder="輸入或選擇品項">
+        <datalist id="itemList">
+          {% for name in items %}
+          <option value="{{ name }}">
+          {% endfor %}
+        </datalist>
+      </div>
+
+      <div class="col-auto">
+        <label class="form-label">數量：</label>
+        <input type="number" id="amountInput" class="form-control" placeholder="數量" min="1">
+      </div>
+
+      <div class="col-auto mt-4">
+        <button class="btn btn-secondary" onclick="addRecord()">加入暫存</button>
+      </div>
+    </div>
+
+    <!-- 暫存區 -->
+    <div class="mt-4">
+      <h5>📝 暫存項目：</h5>
+      <table class="table table-striped" id="tempTable">
+        <thead>
+          <tr>
+            <th>類型</th>
+            <th>品項</th>
+            <th>數量</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- 動態產生 -->
+        </tbody>
+      </table>
+    </div>
+
+    <button class="btn btn-success" onclick="submitRecords()">✅ 確認送出</button>
+  </div>
+
+  <script>
+    const tempData = [];
+
+    function addRecord() {
+      const type = document.querySelector('input[name="type"]:checked').value;
+      const item = document.getElementById('itemInput').value.trim();
+      const amount = parseInt(document.getElementById('amountInput').value, 10);
+
+      if (!item || !amount || amount <= 0) {
+        alert("請輸入有效的品項與數量");
+        return;
+      }
+
+      tempData.push({ type, item, amount });
+      renderTable();
+      document.getElementById('itemInput').value = '';
+      document.getElementById('amountInput').value = '';
+    }
+
+    function removeRecord(index) {
+      tempData.splice(index, 1);
+      renderTable();
+    }
+
+    function renderTable() {
+      const tbody = document.querySelector('#tempTable tbody');
+      tbody.innerHTML = "";
+      tempData.forEach((rec, i) => {
+        const row = `
+          <tr>
+            <td>${rec.type === 'in' ? '進貨' : '出貨'}</td>
+            <td>${rec.item}</td>
+            <td>${rec.amount}</td>
+            <td><button class="btn btn-sm btn-danger" onclick="removeRecord(${i})">移除</button></td>
+          </tr>
+        `;
+        tbody.insertAdjacentHTML('beforeend', row);
+      });
+    }
+
+    async function submitRecords() {
+      if (tempData.length === 0) {
+        alert("暫存項目為空！");
+        return;
+      }
+
+      const res = await fetch('/stock/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(tempData)
+      });
+
+      const result = await res.json();
+      if (result.status === "success") {
+        alert(`成功送出 ${result.count} 筆紀錄！`);
+        tempData.length = 0;
+        renderTable();
+      } else {
+        alert(`送出失敗！, ${result.msg}`);
+      }
+    }
+  </script>
+</body>
+</html>
