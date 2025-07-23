@@ -42,6 +42,11 @@ def records():
     return render_template("records.html", tables=table_list)
 
 
+@app.route("/status")
+def status():
+    return render_template("status.html")
+
+
 @app.route("/records/data")
 def records_data():
     """進出貨紀錄-輸出紀錄"""
