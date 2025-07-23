@@ -52,6 +52,7 @@ def records_data():
 
 @app.route("/stock/input")
 def stock_input():
+    """進出貨-功能選單"""
     inv = depot.get_inventory()
     existing_items = list(inv.keys()) if inv else None
     return render_template("stock_input.html", items=existing_items)
@@ -59,6 +60,7 @@ def stock_input():
 
 @app.route("/stock/submit", methods=["POST"])
 def stock_submit():
+    """進出貨-提交選單"""
     data = request.get_json()
     try:
         for stock in data:
