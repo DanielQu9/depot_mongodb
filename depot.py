@@ -232,7 +232,7 @@ class Depot:
         for item in lst:
             self.inventory.update_one(
                 {"item": item},
-                {"$setOnInsert": {"count": 0, "tag": {"no_auto_remove": True}}},
+                {"$setOnInsert": {"amount": 0, "tag": {"no_auto_remove": True}}},
                 upsert=True,
             )
 
