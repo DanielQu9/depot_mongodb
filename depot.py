@@ -84,6 +84,9 @@ class Depot:
 
         self.remove_on_zero: bool = False  # 是否清除已歸零的倉位
 
+        # 添加預設資料
+        self.__init_default_items()
+
     def write(self, item: DepotItem, source: str = "local") -> None:
         """新增一筆進出貨資料"""
         self.__write_to_db(*item, source=source)
@@ -222,6 +225,16 @@ class Depot:
     def __today_collection(self):
         """當日資料表"""
         return self.db[f"{date.today()}"]
+
+    def __init_default_items(self):
+        """配合esp, 給資料庫插入三組預設物品"""
+        lst = ["small", "big", "tube"]
+        for item in lst:
+            self.inventory.update_one(
+                {"item": item},
+                {"$setOnInsert": {"count": 0, "tag": {"no_auto_remove": True}}},
+                upsert=True,
+            )
 
 
 if __name__ == "__main__":
