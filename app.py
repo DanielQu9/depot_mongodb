@@ -9,9 +9,23 @@ depot = Depot()
 
 @app.route("/")
 def index():
-    inventory = depot.get_inventory()
-    items = list(inventory.keys()) if inventory else None
-    return render_template("index.html", items=items)
+    # side_items：可動態新增選單
+    side_items = [
+        {"name": "首頁", "endpoint": "home"},
+        {"name": "倉庫", "endpoint": "inventory"},
+        # 日後再加頁面，就在這邊添加
+    ]
+    return render_template("base.html", side_items=side_items)
+
+
+@app.route("/home")
+def home():
+    return render_template("home.html")
+
+
+@app.route("/inventory")
+def inventory():
+    return render_template("inventory.html")
 
 
 @app.route("/api/data")
