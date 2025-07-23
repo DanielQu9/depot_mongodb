@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>服務狀態檢查</title>
+    <style>
+        body {
+            font-family: "Segoe UI", sans-serif;
+            background-color: #f9f9f9;
+            padding: 2rem;
+            max-width: 700px;
+            margin: auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .status-online {
+            color: green;
+        }
+
+        .status-offline {
+            color: red;
+        }
+
+        footer {
+            margin-top: 2rem;
+            text-align: center;
+            color: #777;
+        }
+
+        footer a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>服務狀態檢查</h1>
+
+    <table id="status-table">
+        <thead>
+            <tr>
+                <th>名稱</th>
+                <th>網址</th>
+                <th>狀態</th>
+            </tr>
+        </thead>
+        <tbody id="status-body">
+            <!-- JavaScript 動態填入 -->
+        </tbody>
+    </table>
+
+    <footer>
+        <p>由 <a href="https://github.com/DanielQu9/depot_mongodb" target="_blank">dxq 及 遠心</a> 製作</p>
+    </footer>
+
+    <script>
+        const services = [
+            //{ name: "主站", url: "https://dx-q.net" },
+            { name: "LineBot", url: "https://deopt.dx-q.net" },
+            { name: "WEB 服務", url: "https://depot-web.dx-q.net" },
+        ];
+
+        const statusBody = document.getElementById("status-body");
+
+        async function checkStatus(service) {
+            try {
+                const res = await fetch(service.url, { method: 'HEAD', mode: 'no-cors' });
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        async function loadStatus() {
+            for (const service of services) {
+                const tr = document.createElement("tr");
+
+                const tdName = document.createElement("td");
+                tdName.textContent = service.name;
+
+                const tdUrl = document.createElement("td");
+                tdUrl.textContent = service.url;
+
+                const tdStatus = document.createElement("td");
+                tdStatus.textContent = "檢查中...";
+                tr.appendChild(tdName);
+                tr.appendChild(tdUrl);
+                tr.appendChild(tdStatus);
+                statusBody.appendChild(tr);
+
+                const online = await checkStatus(service);
+                tdStatus.innerHTML = online
+                    ? '<span class="status-online">🟢 在線</span>'
+                    : '<span class="status-offline">🔴 離線</span>';
+            }
+        }
+
+        loadStatus();
+    </script>
+
+</body>
+</html>
