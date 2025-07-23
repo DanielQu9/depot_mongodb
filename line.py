@@ -73,7 +73,6 @@ def handle_message(event):
                 ),
                 ButtonComponent(
                     style="primary",
-                    # action=URIAction(label="前台網站", uri=""),
                     action=MessageAction(label="前台網站", text="窩不知道網址QQ"),
                 ),
                 # ButtonComponent(
