@@ -1,11 +1,19 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask_sock import Sock
 from depot import Depot, DepotItem, DepotError, DepotMongo
+import threading
+import json
 
 
 # ==== 初始化設定 ====
 app = Flask(__name__)
+sock = Sock(app)
 depot = Depot()
 mg = DepotMongo()
+clients = set()  # websocket-瀏覽器 列隊
+clients_lock = threading.Lock()  # websocket-瀏覽器 鎖
+esp_connected = False  # websocket-esp 列隊
+esp_lock = threading.Lock()  # websocket-esp 鎖
 
 
 @app.route("/")
@@ -13,7 +21,7 @@ def index():
     # side_items：可動態新增選單
     side_items = [
         {"name": "首頁", "endpoint": "home"},
-        {"name": "ESP32即時顯示", "endpoint": "esp_show"},
+        {"name": "ESP32即時顯示", "endpoint": "esp_live"},
         {"name": "倉庫", "endpoint": "inventory"},
         {"name": "出/入貨物", "endpoint": "stock_input"},
         {"name": "貨物紀錄", "endpoint": "records"},
@@ -77,36 +85,80 @@ def stock_submit():
     return {"status": "success", "count": len(data)}
 
 
-@app.route("/api/data")
-def api_data():
-    """回傳: item, count, unit_weight, min_weight_warning"""
-    item = request.args.get("item")
-    if not item:
-        return jsonify({})
-    inventory = depot.get_inventory()
-    # 明確指定要查 tag 的 item
-    tag = depot.get_tag_json(item)
-    count = inventory.get(item, 0) if inventory else 0
-    unit_w = tag.get("unit_weight", 0) if tag else None
-    min_w = tag.get("min_weight_warning", 0) if tag else None
-    return jsonify(
-        {"item": item, "count": count, "unit_weight": unit_w, "min_weight": min_w}
-    )
-
-
 @app.route("/esp")
-def esp_show():
-    """時時顯示秤重重量"""
-    # 未開發, 佔位
-    return redirect(url_for("home"))
+def esp_live():
+    """即時顯示秤重重量"""
+    return render_template("live.html")
 
 
-@app.route("/esp/send", methods=["POST"])
-def get_esp_data():
-    data = request.get_json()
+@sock.route("/ws/client")
+def ws_client(ws):
+    """WebSocket協議, 瀏覽器端"""
+    # 新連線加入 clients
+    with clients_lock:
+        clients.add(ws)
+    # 初次建立時先告知當前 ESP32 狀態
+    with esp_lock:
+        ws.send(json.dumps({"type": "status", "esp": esp_connected}))
+    try:
+        # 只要連線沒斷，就保持 open（也可接收來自前端的訊息）
+        while True:
+            msg = ws.receive()
+            if msg is None:
+                break
+    finally:
+        with clients_lock:
+            clients.discard(ws)
+
+
+@sock.route("/ws/esp32")
+def ws_esp32(ws):
+    """WebSocket協議, esp32端"""
+    # ESP32 一旦連上，更新狀態並廣播，再持續接收它送來的 JSON 資料
+    global esp_connected
+    with esp_lock:
+        esp_connected = True
+    # 廣播給所有瀏覽器：ESP32 已連線
+    with clients_lock, esp_lock:
+        for c in list(clients):
+            try:
+                c.send(json.dumps({"type": "status", "esp": True}))
+            except:
+                pass
+
+    while True:
+        raw = ws.receive()
+        if raw is None:
+            break
+
+        # 將接收到的內容轉傳給所有瀏覽器 clients
+        with clients_lock:
+            for client in list(clients):
+                try:
+                    client.send(raw)
+                except:
+                    # 跳過已斷線的 client
+                    pass
+
+        # 處理資料
+        do_depot(json.loads(raw))
+
+    # ESP32 斷線時，更新狀態並廣播
+    with esp_lock:
+        esp_connected = False
+    with clients_lock, esp_lock:
+        for c in list(clients):
+            try:
+                c.send(json.dumps({"type": "status", "esp": False}))
+            except:
+                pass
+
+
+def do_depot(jsonfile):
+    data = jsonfile
     final = data.get("final", False)
     if (not data) or (final):
-        return jsonify({"status": "error", "message": "deta_error"}), 400
+        return
 
     # 處理資料
     try:
@@ -123,6 +175,24 @@ def get_esp_data():
         return jsonify({"status": "error", "message": f"deta_bad: {err}"})
 
     return jsonify({"status": "success", "message": "deta_ok"})
+
+
+@app.route("/api/data")
+def index_page_api_data():
+    """回傳: item, count, unit_weight, min_weight_warning"""
+    return render_template(url_for("home"))
+    item = request.args.get("item")
+    if not item:
+        return jsonify({})
+    inventory = depot.get_inventory()
+    # 明確指定要查 tag 的 item
+    tag = depot.get_tag_json(item)
+    count = inventory.get(item, 0) if inventory else 0
+    unit_w = tag.get("unit_weight", 0) if tag else None
+    min_w = tag.get("min_weight_warning", 0) if tag else None
+    return jsonify(
+        {"item": item, "count": count, "unit_weight": unit_w, "min_weight": min_w}
+    )
 
 
 @app.errorhandler(404)

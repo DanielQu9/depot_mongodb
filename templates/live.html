@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>即時重量監控</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet">
+  <style>
+    .status-dot {
+      display: inline-block;
+      width: 0.8em; height: 0.8em;
+      border-radius: 50%; background: gray;
+      margin-right: 0.5em;
+    }
+    .status-connected { background: #28a745; }
+    .status-disconnected { background: #dc3545; }
+  </style>
+</head>
+<body>
+  <div class="container mt-4">
+    <h2>⚖️ 即時重量監控</h2>
+
+    <!-- WebSocket 連線狀態 -->
+    <div class="my-3">
+      <span id="statusDot" class="status-dot"></span>
+      <span id="statusText">尚未連線</span>
+    </div>
+    <!-- ESP32 連線狀態 -->
+    <div class="my-1">
+      <span id="espDot" class="status-dot"></span>
+      <span id="espText">ESP32 未連線</span>
+    </div>
+
+    <!-- 資料顯示區 -->
+    <div class="row text-center">
+      <div class="col"><div class="card p-3"><h5>總重量 (g)</h5><p id="totalWeight" class="display-6">--</p></div></div>
+      <div class="col"><div class="card p-3"><h5>小螺母數量</h5><p id="countSmall" class="display-6">--</p></div></div>
+      <div class="col"><div class="card p-3"><h5>大螺母數量</h5><p id="countLarge" class="display-6">--</p></div></div>
+      <div class="col"><div class="card p-3"><h5>鐵管數量</h5><p id="countTube" class="display-6">--</p></div></div>
+    </div>
+  </div>
+
+  <script>
+    const WS_CLIENT_URL = `ws://${location.host}/ws/client`;
+    const statusDot = document.getElementById("statusDot");
+    const statusText = document.getElementById("statusText");
+    const elTotal   = document.getElementById("totalWeight");
+    const elSmall   = document.getElementById("countSmall");
+    const elLarge   = document.getElementById("countLarge");
+    const elTube    = document.getElementById("countTube");
+
+    let ws;
+    function connect() {
+      ws = new WebSocket(WS_CLIENT_URL);
+
+      ws.onopen = () => {
+        statusDot.className = "status-dot status-connected";
+        statusText.textContent = "已連線到 Server";
+      };
+      ws.onmessage = evt => {
+        const msg = JSON.parse(evt.data);
+        if (msg.type === 'status') {
+          // ESP32 狀態更新
+          if (msg.esp) {
+            espDot.className = "status-dot status-connected";
+            espText.textContent = "ESP32 已連線";
+          } else {
+            espDot.className = "status-dot status-disconnected";
+            espText.textContent = "ESP32 已斷線";
+          }
+        } else {
+          // 實際資料更新
+          elTotal.textContent = msg.total;
+          elSmall.textContent = msg.small;
+          elLarge.textContent = msg.large;
+          elTube.textContent = msg.tube;
+        }
+      };
+      ws.onclose = () => {
+        statusDot.className = "status-dot status-disconnected";
+        statusText.textContent = "已斷線，5秒後重連…";
+        setTimeout(connect, 5000);
+      };
+      ws.onerror = e => console.error("WS 錯誤：", e);
+    }
+
+    connect();
+  </script>
+</body>
+</html>
