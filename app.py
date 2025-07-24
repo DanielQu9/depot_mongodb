@@ -13,6 +13,7 @@ def index():
     # side_items：可動態新增選單
     side_items = [
         {"name": "首頁", "endpoint": "home"},
+        {"name": "ESP32即時顯示", "endpoint": "esp_show"},
         {"name": "倉庫", "endpoint": "inventory"},
         {"name": "出/入貨物", "endpoint": "stock_input"},
         {"name": "貨物紀錄", "endpoint": "records"},
@@ -93,7 +94,14 @@ def api_data():
     )
 
 
-@app.route("/api/esp_send", methods=["POST"])
+@app.route("/esp")
+def esp_show():
+    """時時顯示秤重重量"""
+    # 未開發, 佔位
+    return redirect(url_for("home"))
+
+
+@app.route("/esp/send", methods=["POST"])
 def get_esp_data():
     data = request.get_json()
     final = data.get("final", False)
@@ -115,6 +123,12 @@ def get_esp_data():
         return jsonify({"status": "error", "message": f"deta_bad: {err}"})
 
     return jsonify({"status": "success", "message": "deta_ok"})
+
+
+@app.errorhandler(404)
+def page_not_found(e):
+    """自訂 404 頁面"""
+    return render_template("404.html"), 404
 
 
 if __name__ == "__main__":
