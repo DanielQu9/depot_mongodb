@@ -192,7 +192,7 @@ def do_depot(jsonfile):
 @app.route("/api/data")
 def index_page_api_data():
     """暫時用不到\n回傳: item, count, unit_weight, min_weight_warning"""
-    return render_template(url_for("home"))
+    return redirect(url_for("home"))
     item = request.args.get("item")
     if not item:
         return jsonify({})
