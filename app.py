@@ -51,17 +51,17 @@ def records():
     return render_template("records.html", tables=table_list)
 
 
-@app.route("/status")
-def status():
-    return render_template("status.html")
-
-
 @app.route("/records/data")
 def records_data():
     """進出貨紀錄-輸出紀錄"""
     table_name = request.args.get("date")
     data = mg.find_records(str(table_name))
     return render_template("records_data.html", data=data, date=table_name)
+
+
+@app.route("/status")
+def status():
+    return render_template("status.html")
 
 
 @app.route("/stock/input")
@@ -164,6 +164,7 @@ def ws_esp32(ws):
 
 
 def do_depot(jsonfile):
+    """寫入esp32出貨資料"""
     data = jsonfile
     final = data.get("final", False)
     if (not data) or (final):
@@ -188,7 +189,7 @@ def do_depot(jsonfile):
 
 @app.route("/api/data")
 def index_page_api_data():
-    """回傳: item, count, unit_weight, min_weight_warning"""
+    """暫時用不到\n回傳: item, count, unit_weight, min_weight_warning"""
     return render_template(url_for("home"))
     item = request.args.get("item")
     if not item:
