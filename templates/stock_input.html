@@ -121,11 +121,11 @@
       const result = await res.json();
       if (result.status === "success") {
         alert(`成功送出 ${result.count} 筆紀錄！`);
-        tempData.length = 0;
-        renderTable();
       } else {
         alert(`送出失敗！, ${result.msg}`);
       }
+      tempData.length = 0;
+      renderTable();
     }
   </script>
 </body>

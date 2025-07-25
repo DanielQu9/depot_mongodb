@@ -75,14 +75,23 @@ def stock_input():
 @app.route("/stock/submit", methods=["POST"])
 def stock_submit():
     """進出貨-提交選單"""
+    fail_data = []
     data = request.get_json()
-    try:
-        for stock in data:
+    for stock in data:
+        try:
             depot.write(DepotItem(stock["type"], stock["item"], stock["amount"]))
-    except Exception as err:
-        return {"status": "failure", "msg": err}
+        except DepotError as err:
+            fail_data.append(err.message)
+        except Exception as err:
+            fail_data.append(err)
 
-    return {"status": "success", "count": len(data)}
+    if fail_data == []:
+        return {"status": "success", "count": len(data)}
+    else:
+        return {
+            "status": "failure",
+            "msg": f"共{len(fail_data)}均已忽略, 原因:\n {(f'{i}\n' for i in fail_data)}",
+        }
 
 
 @app.route("/esp")
