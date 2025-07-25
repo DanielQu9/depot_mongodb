@@ -47,7 +47,7 @@ def inventory():
 @app.route("/records")
 def records():
     """進出貨紀錄-輸出列表"""
-    table_list = mg.date_collections  # 獲取所有資料表
+    table_list = sorted(mg.date_collections, reverse=True)  # 獲取所有資料表
     return render_template("records.html", tables=table_list)
 
 
@@ -79,7 +79,9 @@ def stock_submit():
     data = request.get_json()
     for stock in data:
         try:
-            depot.write(DepotItem(stock["type"], stock["item"], stock["amount"]))
+            depot.write(
+                DepotItem(stock["type"], stock["item"], stock["amount"]), source="app"
+            )
         except DepotError as err:
             fail_data.append(err.message)
         except Exception as err:
