@@ -106,7 +106,7 @@ async def records_data(request: Request, date: str):
 @app.get("/status", response_class=HTMLResponse)
 async def status_page(request: Request):
     services = [
-        {"name": "LineBot", "url": "https://deopt.dx-q.net/callback", "req": True},
+        {"name": "LineBot", "url": "https://depot.dx-q.net/status", "req": True},
         {"name": "WEB 服務", "url": "https://depot-web.dx-q.net/home", "req": True},
         {
             "name": "ESP32",
