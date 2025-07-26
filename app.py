@@ -6,6 +6,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from depot import Depot, DepotItem, DepotError, DepotMongo
 import json
+import httpx
 from typing import List
 
 # ---- 初始化配置 ----
@@ -104,7 +105,35 @@ async def records_data(request: Request, date: str):
 
 @app.get("/status", response_class=HTMLResponse)
 async def status_page(request: Request):
-    return templates.TemplateResponse("status.html", {"request": request})
+    services = [
+        {"name": "LineBot", "url": "https://deopt.dx-q.net/callback", "req": True},
+        {"name": "WEB 服務", "url": "https://depot-web.dx-q.net/home", "req": True},
+        {
+            "name": "ESP32",
+            "url": "WebSocket",
+            "req": False,
+        },  # 請確保ESP32的index在2, 不然下面自己改
+    ]
+    results = []
+
+    async with httpx.AsyncClient(timeout=3.0) as client:
+        for svc in services:
+            try:
+                resp = await client.get(svc["url"])
+                online = resp.status_code < 400
+            except:
+                online = False
+            results.append({"name": svc["name"], "url": svc["url"], "online": online})
+
+        # 檢查ESP32是否上線:
+        if manager.esp_connected:
+            results.append(
+                {"name": services[2]["name"], "url": services[2]["url"], "online": True}
+            )
+
+    return templates.TemplateResponse(
+        "status.html", {"request": request, "results": results}
+    )
 
 
 @app.get("/stock/input", response_class=HTMLResponse)
