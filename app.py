@@ -63,13 +63,9 @@ def records_data():
 @app.route("/status")
 def status():
     services = [
-        {"name": "LineBot", "url": "https://depot.dx-q.net/status", "req": True},
-        {"name": "WEB 服務", "url": "https://depot-web.dx-q.net/home", "req": True},
-        {
-            "name": "ESP32",
-            "url": "WebSocket",
-            "req": False,
-        },  # 請確保ESP32的index在2, 不然下面自己改
+        {"name": "LineBot", "url": "https://depot.dx-q.net/status"},
+        {"name": "WEB 服務", "url": "https://depot-web.dx-q.net/home"},
+        {"name": "ESP32", "url": "WebSocket"},  # 請確保ESP32的index在2, 不然下面自己改
     ]
     results = []
 
@@ -120,7 +116,7 @@ def stock_submit():
     else:
         return {
             "status": "failure",
-            "msg": f"共{len(fail_data)}均已忽略, 原因:\n {(f'{i}\n' for i in fail_data)}",
+            "msg": f"共{len(fail_data)}均已忽略, 原因:\n {''.join(f'{i}\n' for i in fail_data)}",
         }
 
 
