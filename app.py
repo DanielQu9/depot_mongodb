@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_sock import Sock
 from depot import Depot, DepotItem, DepotError, DepotMongo
 import threading
+import requests
 import json
 
 
@@ -61,7 +62,34 @@ def records_data():
 
 @app.route("/status")
 def status():
-    return render_template("status.html")
+    services = [
+        {"name": "LineBot", "url": "https://deopt.dx-q.net/callback", "req": True},
+        {"name": "WEB 服務", "url": "https://depot-web.dx-q.net/home", "req": True},
+        {
+            "name": "ESP32",
+            "url": "WebSocket",
+            "req": False,
+        },  # 請確保ESP32的index在2, 不然下面自己改
+    ]
+    results = []
+
+    # 檢查網站是否存活
+    for svc in services:
+        try:
+            # 使用 HEAD 請求檢查，超時設為 3 秒
+            resp = requests.head(svc["url"], timeout=3)
+            online = resp.status_code < 400
+        except:
+            online = False
+        results.append({"name": svc["name"], "url": svc["url"], "online": online})
+
+    # 檢查ESP32是否上線:
+    if esp_connected:
+        results.append(
+            {"name": services[2]["name"], "url": services[2]["url"], "online": True}
+        )
+
+    return render_template("status.html", results=results)
 
 
 @app.route("/stock/input")
