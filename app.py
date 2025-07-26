@@ -70,6 +70,7 @@ async def index(request: Request):
 
 @app.get("/home", response_class=HTMLResponse)
 async def home(request: Request):
+    """首頁"""
     return templates.TemplateResponse("home.html", {"request": request})
 
 
@@ -81,6 +82,7 @@ async def esp_live(request: Request):
 
 @app.get("/inventory", response_class=HTMLResponse)
 async def inventory(request: Request):
+    """倉庫庫存"""
     inv = depot.get_inventory()
     return templates.TemplateResponse(
         "inventory.html", {"request": request, "items": inv}
@@ -89,6 +91,7 @@ async def inventory(request: Request):
 
 @app.get("/records", response_class=HTMLResponse)
 async def records(request: Request):
+    """進出貨紀錄 - 輸出框架網頁"""
     table_list = sorted(mg.date_collections, reverse=True)
     return templates.TemplateResponse(
         "records.html", {"request": request, "tables": table_list}
@@ -97,6 +100,7 @@ async def records(request: Request):
 
 @app.get("/records/data", response_class=HTMLResponse)
 async def records_data(request: Request, date: str):
+    """進出貨紀錄 - 輸出紀錄"""
     data = mg.find_records(date)
     return templates.TemplateResponse(
         "records_data.html", {"request": request, "data": data, "date": date}
@@ -105,6 +109,7 @@ async def records_data(request: Request, date: str):
 
 @app.get("/status", response_class=HTMLResponse)
 async def status_page(request: Request):
+    """檢查各服務是否上線"""
     services = [
         {"name": "LineBot", "url": "https://depot.dx-q.net/status"},
         {"name": "WEB 服務", "url": "https://depot-web.dx-q.net/home"},
@@ -134,6 +139,7 @@ async def status_page(request: Request):
 
 @app.get("/stock/input", response_class=HTMLResponse)
 async def stock_input(request: Request):
+    """貨物進出 - 框架網頁"""
     inv = depot.get_inventory()
     existing_items = list(inv.keys()) if inv else None
     return templates.TemplateResponse(
@@ -143,6 +149,7 @@ async def stock_input(request: Request):
 
 @app.post("/stock/submit")
 async def stock_submit(stock_data: List[dict]):
+    """貨物進出 - 資料處理"""
     fail_data = []
     for stock in stock_data:
         try:
@@ -164,6 +171,7 @@ async def stock_submit(stock_data: List[dict]):
 # ---- WebSocket: 瀏覽器客戶端 ----
 @app.websocket("/ws/client")
 async def ws_client(websocket: WebSocket):
+    """WebSocket協議 - 瀏覽器端"""
     await manager.connect_client(websocket)
     # 初次連線時發送當前 ESP32 連線狀態
     await websocket.send_json({"type": "status", "esp": manager.esp_connected})
@@ -177,6 +185,7 @@ async def ws_client(websocket: WebSocket):
 # ---- WebSocket: ESP32 ----
 @app.websocket("/ws/esp32")
 async def ws_esp32(websocket: WebSocket):
+    """WebSocket協議 - esp32端"""
     await websocket.accept()
     manager.esp_connected = True
     # ESP32 連線時，通知所有瀏覽器客戶端
@@ -214,6 +223,7 @@ def do_depot(data: dict):
 # ---- 自訂 404 錯誤處理 ----
 @app.exception_handler(StarletteHTTPException)
 async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
+    """自訂 404 頁面"""
     if exc.status_code == 404:
         return templates.TemplateResponse(
             "404.html", {"request": request}, status_code=404
