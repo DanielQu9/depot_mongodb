@@ -63,7 +63,7 @@ def records_data():
 @app.route("/status")
 def status():
     services = [
-        {"name": "LineBot", "url": "https://deopt.dx-q.net/callback", "req": True},
+        {"name": "LineBot", "url": "https://depot.dx-q.net/status", "req": True},
         {"name": "WEB 服務", "url": "https://depot-web.dx-q.net/home", "req": True},
         {
             "name": "ESP32",
@@ -89,7 +89,7 @@ def status():
             {"name": services[2]["name"], "url": services[2]["url"], "online": True}
         )
 
-    return render_template("status.html", results=results)
+    return render_template("status.html", results=results, framework="Flask")
 
 
 @app.route("/stock/input")
