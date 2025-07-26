@@ -66,60 +66,26 @@
                 <th>狀態</th>
             </tr>
         </thead>
-        <tbody id="status-body">
-            <!-- JavaScript 動態填入 -->
+        <tbody>
+            {% for r in results %}
+            <tr>
+                <td>{{ r.name }}</td>
+                <td><a href="{{ r.url }}" target="_blank">{{ r.url }}</a></td>
+                <td>
+                  {% if r.online %}
+                    <span class="status-online">🟢 在線</span>
+                  {% else %}
+                    <span class="status-offline">🔴 離線</span>
+                  {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
         </tbody>
     </table>
 
     <footer>
         <p>由 <a href="https://github.com/DanielQu9/depot_mongodb" target="_blank">dxq 及 遠心</a> 製作</p>
     </footer>
-
-    <script>
-        const services = [
-            //{ name: "主站", url: "https://dx-q.net" },
-            { name: "LineBot", url: "https://deopt.dx-q.net" },
-            { name: "WEB 服務", url: "https://depot-web.dx-q.net" },
-            { name: "ESP32", url: "ws://127.0.0.1:5000/ws/client" },
-        ];
-
-        const statusBody = document.getElementById("status-body");
-
-        async function checkStatus(service) {
-            try {
-                const res = await fetch(service.url, { method: 'HEAD', mode: 'no-cors' });
-                return true;
-            } catch (e) {
-                return false;
-            }
-        }
-
-        async function loadStatus() {
-            for (const service of services) {
-                const tr = document.createElement("tr");
-
-                const tdName = document.createElement("td");
-                tdName.textContent = service.name;
-
-                const tdUrl = document.createElement("td");
-                tdUrl.textContent = service.url;
-
-                const tdStatus = document.createElement("td");
-                tdStatus.textContent = "檢查中...";
-                tr.appendChild(tdName);
-                tr.appendChild(tdUrl);
-                tr.appendChild(tdStatus);
-                statusBody.appendChild(tr);
-
-                const online = await checkStatus(service);
-                tdStatus.innerHTML = online
-                    ? '<span class="status-online">🟢 在線</span>'
-                    : '<span class="status-offline">🔴 離線</span>';
-            }
-        }
-
-        loadStatus();
-    </script>
 
 </body>
 </html>
