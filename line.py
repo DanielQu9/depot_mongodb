@@ -1,4 +1,4 @@
-from flask import Flask, request, abort
+from flask import Flask, request, abort, Response
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import (
@@ -35,6 +35,11 @@ def callback():
     except InvalidSignatureError:
         abort(400)
     return "OK"
+
+
+@app.route("/status")
+def status():
+    return Response(status=204)
 
 
 @handler.add(MessageEvent, message=TextMessage)
