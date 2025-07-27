@@ -7,7 +7,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from depot import Depot, DepotItem, DepotError, DepotMongo
 import json
 import httpx
-from typing import List
+
 
 # ---- 初始化配置 ----
 app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
@@ -23,7 +23,7 @@ class ConnectionManager:
     """連線管理器, 維護瀏覽器客戶端連線與 ESP32 狀態"""
 
     def __init__(self):
-        self.clients: List[WebSocket] = []
+        self.clients: list[WebSocket] = []
         self.esp_connected: bool = False
 
     async def connect_client(self, websocket: WebSocket):
@@ -148,7 +148,7 @@ async def stock_input(request: Request):
 
 
 @app.post("/stock/submit")
-async def stock_submit(stock_data: List[dict]):
+async def stock_submit(stock_data: list[dict]):
     """貨物進出 - 資料處理"""
     fail_data = []
     for stock in stock_data:
