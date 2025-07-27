@@ -1,7 +1,14 @@
-# main
+# depot(main):
 pymongo
 
-# web
+# web:
 flask
+flask-sock
+requests
 line-bot-sdk
 python-dotenv
+
+# web_fastapi:
+fastapi
+"uvicorn[standard]"
+httpx
