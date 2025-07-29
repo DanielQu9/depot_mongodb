@@ -74,7 +74,7 @@ def handle_message(event):
                 ),
                 ButtonComponent(
                     style="secondary",
-                    action=URIAction(label="後台網站", uri="http://depot-web.dx-q.net"),
+                    action=URIAction(label="後台網站", uri="http://web.depot.dx-q.net"),
                 ),
                 ButtonComponent(
                     style="primary",
