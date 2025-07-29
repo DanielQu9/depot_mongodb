@@ -63,8 +63,8 @@ def records_data():
 @app.route("/status")
 def status():
     services = [
-        {"name": "LineBot", "url": "https://line.depot.dx-q.net/status"},
-        {"name": "WEB 服務", "url": "https://web.depot.dx-q.net/home"},
+        {"name": "LineBot", "url": "https://depot-line.dx-q.net/status"},
+        {"name": "WEB 服務", "url": "https://depot-web.dx-q.net/home"},
         {"name": "ESP32", "url": "WebSocket"},  # 請確保ESP32的index在2, 不然下面自己改
     ]
     results = []
