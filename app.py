@@ -111,8 +111,8 @@ async def records_data(request: Request, date: str):
 async def status_page(request: Request):
     """檢查各服務是否上線"""
     services = [
-        {"name": "LineBot", "url": "https://depot.dx-q.net/status"},
-        {"name": "WEB 服務", "url": "https://depot-web.dx-q.net/home"},
+        {"name": "LineBot", "url": "https://line.depot.dx-q.net/status"},
+        {"name": "WEB 服務", "url": "https://web.depot.dx-q.net/home"},
         {"name": "ESP32", "url": "WebSocket"},  # 請確保ESP32的index在2, 不然下面自己改
     ]
     results = []
