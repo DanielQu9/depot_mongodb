@@ -137,6 +137,11 @@ async def status_page(request: Request):
     )
 
 
+@app.get("/status/data", response_class=HTMLResponse)
+async def status_data(request: Request):
+    pass
+
+
 @app.get("/stock/input", response_class=HTMLResponse)
 async def stock_input(request: Request):
     """貨物進出 - 框架網頁"""
