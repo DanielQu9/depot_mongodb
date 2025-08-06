@@ -81,9 +81,7 @@ def status():
 
     # 檢查ESP32是否上線:
     if esp_connected:
-        results.append(
-            {"name": services[2]["name"], "url": services[2]["url"], "online": True}
-        )
+        results[2]["online"] = True
 
     return render_template("status.html", results=results, framework="Flask")
 
