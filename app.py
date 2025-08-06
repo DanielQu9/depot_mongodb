@@ -130,6 +130,7 @@ def ws_client(ws):
     # 新連線加入 clients
     with clients_lock:
         clients.add(ws)
+        print(f"[ws_client]-info: 用戶 {ws} 已連線")
     # 初次建立時先告知當前 ESP32 狀態
     with esp_lock:
         ws.send(json.dumps({"type": "status", "esp": esp_connected}))
@@ -141,6 +142,7 @@ def ws_client(ws):
                 break
     finally:
         with clients_lock:
+            print(f"[ws_client]-info: 用戶 {ws} 已離線")
             clients.discard(ws)
 
 
@@ -151,6 +153,7 @@ def ws_esp32(ws):
     global esp_connected
     with esp_lock:
         esp_connected = True
+        print("[ws_esp32]-info: ESP32 已連線")
     # 廣播給所有瀏覽器：ESP32 已連線
     with clients_lock, esp_lock:
         for c in list(clients):
@@ -179,6 +182,7 @@ def ws_esp32(ws):
     # ESP32 斷線時，更新狀態並廣播
     with esp_lock:
         esp_connected = False
+        print("[ws_esp32]-info: ESP32 已斷線")
     with clients_lock, esp_lock:
         for c in list(clients):
             try:
