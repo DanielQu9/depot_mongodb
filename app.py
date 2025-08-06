@@ -49,6 +49,7 @@ def inventory():
 def records():
     """進出貨紀錄-輸出列表"""
     table_list = sorted(mg.date_collections, reverse=True)  # 獲取所有資料表
+    # print(f"[flag]--------: {table_list}")
     return render_template("records.html", tables=table_list)
 
 
