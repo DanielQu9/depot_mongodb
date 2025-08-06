@@ -1,4 +1,4 @@
-from flask import Flask, request, abort, Response
+from flask import Flask, request, abort, Response, render_template
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import (
@@ -42,6 +42,11 @@ def status():
     return Response(status=204)
 
 
+@app.route("/line_web_menu")
+def line_web_menu():
+    return render_template("line_web_menu.html")
+
+
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     msg: str = event.message.text.strip()
@@ -78,7 +83,10 @@ def handle_message(event):
                 ),
                 ButtonComponent(
                     style="primary",
-                    action=MessageAction(label="前台網站", text="窩不知道網址QQ"),
+                    action=URIAction(
+                        label="前台網站",
+                        uri="https://depot-line.dx-q.net/line_web_menu",
+                    ),
                 ),
                 # ButtonComponent(
                 #     style="secondary",
