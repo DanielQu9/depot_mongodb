@@ -42,8 +42,7 @@
   </div>
 
   <script>
-    // const WS_CLIENT_URL = `ws://127.0.0.1:5000/ws/client`;
-    const WS_CLIENT_URL = `ws://depot-web.dx-q.net/ws/client`;
+    const WS_CLIENT_URL = `wss://${location.host}/ws/client`;
     const statusDot = document.getElementById("statusDot");
     const statusText = document.getElementById("statusText");
     const elTotal   = document.getElementById("totalWeight");
