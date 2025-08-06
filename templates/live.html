@@ -42,6 +42,7 @@
   </div>
 
   <script>
+    // const WS_CLIENT_URL = `ws://127.0.0.1:5000/ws/client`;
     const WS_CLIENT_URL = `ws://depot-web.dx-q.net/ws/client`;
     const statusDot = document.getElementById("statusDot");
     const statusText = document.getElementById("statusText");
@@ -71,9 +72,9 @@
           }
         } else {
           // 實際資料更新
-          elTotal.textContent = msg.total;
+          elTotal.textContent = msg.weight;
           elSmall.textContent = msg.small;
-          elLarge.textContent = msg.large;
+          elLarge.textContent = msg.big;
           elTube.textContent = msg.tube;
         }
       };
