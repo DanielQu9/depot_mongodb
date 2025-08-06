@@ -42,7 +42,8 @@
   </div>
 
   <script>
-    const WS_CLIENT_URL = `wss://${location.host}/ws/client`;
+    const protocol = location.hostname === "127.0.0.1" ? "ws" : "wss";
+    const WS_CLIENT_URL = `${protocol}://${location.host}/ws/client`;
     const statusDot = document.getElementById("statusDot");
     const statusText = document.getElementById("statusText");
     const elTotal   = document.getElementById("totalWeight");
