@@ -29,6 +29,9 @@
         .status-online {
             color: green;
         }
+        .status-connecting {
+            color: orange;
+        }
         .status-offline {
             color: red;
         }
@@ -59,7 +62,21 @@
             </tr>
         </thead>
         <tbody>
-            <!-- 由 JS 動態填充 -->
+            {% for r in results %}
+            <tr>
+                <td>{{ r.name }}</td>
+                <td>
+                  {% if r.url == 'WebSocket' %}
+                    <em>WebSocket</em>
+                  {% else %}
+                    <a href="{{ r.url }}" target="_blank">{{ r.url }}</a>
+                  {% endif %}
+                </td>
+                <td>
+                    <span class="status-connecting">🟠 連線中</span>
+                </td>
+            </tr>
+            {% endfor %}
         </tbody>
     </table>
 
@@ -79,7 +96,7 @@
     document.addEventListener('DOMContentLoaded', async () => {
         const tbody = document.querySelector('#status-table tbody');
         try {
-            const res = await fetch('{{ request.url_for("status_data") }}');
+            const res = await fetch('{{ url_for("status_data") }}');
             const data = await res.json();
             tbody.innerHTML = '';
             data.results.forEach(svc => {

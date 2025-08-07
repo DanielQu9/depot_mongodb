@@ -111,8 +111,9 @@ async def records_data(request: Request, date: str):
 @app.get("/status", response_class=HTMLResponse)
 async def status_page(request: Request):
     """回傳狀態頁"""
+    results = [{"name": "連線中", "url": "------連線中------"}]
     return templates.TemplateResponse(
-        "status.html", {"request": request, "framework": "FastAPI"}
+        "status.html", {"request": request, "results": results, "framework": "FastAPI"}
     )
 
 

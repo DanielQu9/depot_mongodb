@@ -64,6 +64,12 @@ def records_data():
 
 @app.route("/status")
 def status():
+    results = [{"name": "連線中", "url": "------連線中------"}]
+    return render_template("status.html", results=results, framework="Flask")
+
+
+@app.route("/status/data")
+def status_data():
     services = [
         {"name": "LineBot", "url": "https://depot-line.dx-q.net/status"},
         {"name": "WEB 服務", "url": "https://depot-web.dx-q.net/home"},
@@ -85,7 +91,7 @@ def status():
     if esp_connected:
         results[2]["online"] = True
 
-    return render_template("status.html", results=results, framework="Flask")
+    return jsonify(results=results)
 
 
 @app.route("/stock/input")
