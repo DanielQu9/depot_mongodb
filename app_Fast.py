@@ -92,6 +92,7 @@ async def inventory(request: Request):
 @app.get("/records", response_class=HTMLResponse)
 async def records(request: Request):
     """進出貨紀錄 - 輸出框架網頁"""
+    mg.__init__()
     table_list = sorted(mg.date_collections, reverse=True)
     return templates.TemplateResponse(
         "records.html", {"request": request, "tables": table_list}
@@ -128,9 +129,7 @@ async def status_page(request: Request):
 
         # 檢查ESP32是否上線:
         if manager.esp_connected:
-            results.append(
-                {"name": services[2]["name"], "url": services[2]["url"], "online": True}
-            )
+            results[2]["online"] = True
 
     return templates.TemplateResponse(
         "status.html", {"request": request, "results": results, "framework": "FastAPI"}
@@ -220,7 +219,7 @@ def do_depot(data: dict):
         depot.write(small, source="esp")
         depot.write(big, source="esp")
         depot.write(tube, source="esp")
-        print("[Depot]-info: write_down")
+        # print("[Depot]-info: write_down")
     except DepotError as err:
         print(f"[Depot]-error: {err}")
 
