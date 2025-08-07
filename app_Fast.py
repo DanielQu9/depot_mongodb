@@ -92,7 +92,7 @@ async def inventory(request: Request):
 @app.get("/records", response_class=HTMLResponse)
 async def records(request: Request):
     """進出貨紀錄 - 輸出框架網頁"""
-    mg.__init__()
+    mg.__init__()  # 初始化mg
     table_list = sorted(mg.date_collections, reverse=True)
     return templates.TemplateResponse(
         "records.html", {"request": request, "tables": table_list}
@@ -110,6 +110,14 @@ async def records_data(request: Request, date: str):
 
 @app.get("/status", response_class=HTMLResponse)
 async def status_page(request: Request):
+    """回傳狀態頁"""
+    return templates.TemplateResponse(
+        "status.html", {"request": request, "framework": "FastAPI"}
+    )
+
+
+@app.get("/status/data", response_class=HTMLResponse)
+async def status_data(request: Request):
     """檢查各服務是否上線"""
     services = [
         {"name": "LineBot", "url": "https://depot-line.dx-q.net/status"},
@@ -131,14 +139,7 @@ async def status_page(request: Request):
         if manager.esp_connected:
             results[2]["online"] = True
 
-    return templates.TemplateResponse(
-        "status.html", {"request": request, "results": results, "framework": "FastAPI"}
-    )
-
-
-@app.get("/status/data", response_class=HTMLResponse)
-async def status_data(request: Request):
-    pass
+    return JSONResponse(content={"results": results})
 
 
 @app.get("/stock/input", response_class=HTMLResponse)
@@ -238,4 +239,4 @@ async def custom_http_exception_handler(request: Request, exc: StarletteHTTPExce
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("app:app", host="127.0.0.1", port=5000, reload=True)
+    uvicorn.run("app_Fast:app", host="127.0.0.1", port=5000, reload=True)
