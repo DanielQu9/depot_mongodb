@@ -116,7 +116,7 @@ async def status_page(request: Request):
     )
 
 
-@app.get("/status/data", response_class=HTMLResponse)
+@app.get("/status/data")
 async def status_data(request: Request):
     """檢查各服務是否上線"""
     services = [
