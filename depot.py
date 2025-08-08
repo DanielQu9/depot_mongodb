@@ -338,7 +338,7 @@ class AsyncDepot:
                 )
                 print(f"移除 空物品 {item} 成功")
 
-    async def get_inventory(self) -> dict[str, int] | dict[Any, Any]:
+    async def get_inventory(self) -> dict[str, int]:
         """
         輸出當前倉庫內容\n
         建議使用 dict.items() 獲取物品和數量\n
