@@ -83,7 +83,7 @@ async def esp_live(request: Request):
 @app.get("/inventory", response_class=HTMLResponse)
 async def inventory(request: Request):
     """倉庫庫存"""
-    inv = depot.get_inventory()
+    inv = await depot.get_inventory()
     return templates.TemplateResponse(
         "inventory.html", {"request": request, "items": inv}
     )
@@ -146,7 +146,7 @@ async def status_data(request: Request):
 @app.get("/stock/input", response_class=HTMLResponse)
 async def stock_input(request: Request):
     """貨物進出 - 框架網頁"""
-    inv: dict = depot.get_inventory()  # type: ignore
+    inv: dict = await depot.get_inventory()  # type: ignore
     existing_items = list(inv.keys()) if inv else None
     return templates.TemplateResponse(
         "stock_input.html", {"request": request, "items": existing_items}
