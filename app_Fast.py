@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from depot import Depot, DepotItem, DepotError, DepotMongo
+from depot import AsyncDepot, DepotItem, DepotError, DepotMongo
 import json
 import httpx
 
@@ -15,7 +15,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")  # 掛載�
 templates = Jinja2Templates(directory="templates")  # 模板目錄
 
 # ---- 全域物件初始化 ----
-depot = Depot()
+depot = AsyncDepot()
 mg = DepotMongo()
 
 
@@ -146,7 +146,7 @@ async def status_data(request: Request):
 @app.get("/stock/input", response_class=HTMLResponse)
 async def stock_input(request: Request):
     """貨物進出 - 框架網頁"""
-    inv = depot.get_inventory()
+    inv: dict = depot.get_inventory()  # type: ignore
     existing_items = list(inv.keys()) if inv else None
     return templates.TemplateResponse(
         "stock_input.html", {"request": request, "items": existing_items}
@@ -159,7 +159,7 @@ async def stock_submit(stock_data: list[dict]):
     fail_data = []
     for stock in stock_data:
         try:
-            depot.write(
+            await depot.write(
                 DepotItem(stock["type"], stock["item"], stock["amount"]), source="app"
             )
         except DepotError as err:
@@ -203,14 +203,14 @@ async def ws_esp32(websocket: WebSocket):
             await manager.broadcast(raw)
             # 處理並寫入出貨資料
             data = json.loads(raw)
-            do_depot(data)
+            await do_depot(data)
     except WebSocketDisconnect:
         manager.esp_connected = False
         # ESP32 斷線時，通知所有瀏覽器客戶端
         await manager.broadcast_json({"type": "status", "esp": False})
 
 
-def do_depot(data: dict):
+async def do_depot(data: dict):
     """處理 ESP32 傳來的出貨資料，並寫入 Depot"""
     if not data or data.get("final", False):
         return
@@ -218,9 +218,9 @@ def do_depot(data: dict):
         small = DepotItem("out", "small", data.get("small", 0))
         big = DepotItem("out", "big", data.get("big", 0))
         tube = DepotItem("out", "tube", data.get("tube", 0))
-        depot.write(small, source="esp")
-        depot.write(big, source="esp")
-        depot.write(tube, source="esp")
+        await depot.write(small, source="esp")
+        await depot.write(big, source="esp")
+        await depot.write(tube, source="esp")
         # print("[Depot]-info: write_down")
     except DepotError as err:
         print(f"[Depot]-error: {err}")
