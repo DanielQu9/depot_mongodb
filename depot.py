@@ -245,12 +245,17 @@ class AsyncDepot:
     - set_tag 設定tag標籤\n
     - get_tag_json 取得該物品的tag頁\n
     \n
-    使用範例: \n
-      from depot import Depot, DepotItem
+    使用範例:\n
 
-      db = Depot()
-      item = DepotItem("in", "物品", 1)
-      db.write(item)
+      from depot import AsyncDepot, DepotItem
+      import asyncio
+
+      async def main():
+        db = AsyncDepot()
+        item = DepotItem("in", "物品", 1)
+        await db.write(item)
+
+      asyncio.run(main())
 
     \n
     設定: \n
@@ -317,7 +322,7 @@ class AsyncDepot:
         print(f"紀錄 [{type}] {item}*{amount} 成功，紀錄 ID: {result.inserted_id}")
 
         # 刪除歸零倉庫位
-        no_auto_remove = self.get_tag_json(item)
+        no_auto_remove = await self.get_tag_json(item)
         if self.remove_on_zero:
             if (
                 (
