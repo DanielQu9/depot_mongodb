@@ -257,7 +257,7 @@ class AsyncDepot:
     - 可設定 Depot.remove_on_zero 進行移除等於零的欄位\n
     """
 
-    async def __init__(self) -> None:
+    def __init__(self) -> None:
         # 連線
         self.client = AsyncMongoClient("mongodb://localhost:27017/")
         self.db = self.client["depotDB"]
@@ -269,7 +269,8 @@ class AsyncDepot:
         self.remove_on_zero: bool = False  # 是否清除已歸零的倉位
 
         # 添加預設資料
-        await self.__init_default_items()
+        sync_depot = Depot()
+        sync_depot._Depot__init_default_items()  # type: ignore
 
     async def write(self, DItem: DepotItem, source: str = "local") -> None:
         """新增一筆進出貨資料"""
@@ -381,16 +382,6 @@ class AsyncDepot:
             return None
 
         return dict(data).get("tag", {})
-
-    async def __init_default_items(self):
-        """配合esp, 給資料庫插入三組預設物品"""
-        lst = ["small", "big", "tube"]
-        for item in lst:
-            await self.inventory.update_one(
-                {"item": item},
-                {"$setOnInsert": {"amount": 0, "tag": {"no_auto_remove": True}}},
-                upsert=True,
-            )
 
 
 class DepotMongo(Depot):
