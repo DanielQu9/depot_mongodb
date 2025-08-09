@@ -164,27 +164,18 @@ class Depot:
         print(f"紀錄 [{type}] {item}*{amount} 成功，紀錄 ID: {result.inserted_id}")
 
         # 刪除歸零倉庫位
-        no_auto_remove = self.get_tag_json(item)
         if self.remove_on_zero:
-            if (
-                (
-                    no_auto_remove
-                    if no_auto_remove is None
-                    else no_auto_remove.get("no_auto_remove")
-                )
-                != True
-            ) and (new_amount == 0):
-                self.inventory.delete_one(
-                    {
-                        "item": item,
-                        "amount": 0,
-                        "$or": [
-                            {"tag.no_auto_remove": {"$ne": True}},
-                            {"tag.no_auto_remove": {"$exists": False}},
-                        ],
-                    }
-                )
-                print(f"移除 空物品 {item} 成功")
+            self.inventory.delete_one(
+                {
+                    "item": item,
+                    "amount": 0,
+                    "$or": [
+                        {"tag.no_auto_remove": {"$ne": True}},
+                        {"tag.no_auto_remove": {"$exists": False}},
+                    ],
+                }
+            )
+            print(f"移除 空物品 {item} 成功")
 
     def set_tag(self, item: str, tag: dict[str, Any]) -> None:
         """
@@ -322,27 +313,18 @@ class AsyncDepot:
         print(f"紀錄 [{type}] {item}*{amount} 成功，紀錄 ID: {result.inserted_id}")
 
         # 刪除歸零倉庫位
-        no_auto_remove = await self.get_tag_json(item)
         if self.remove_on_zero:
-            if (
-                (
-                    no_auto_remove
-                    if no_auto_remove is None
-                    else no_auto_remove.get("no_auto_remove")  # type: ignore
-                )
-                != True
-            ) and (new_amount == 0):
-                await self.inventory.delete_one(
-                    {
-                        "item": item,
-                        "amount": 0,
-                        "$or": [
-                            {"tag.no_auto_remove": {"$ne": True}},
-                            {"tag.no_auto_remove": {"$exists": False}},
-                        ],
-                    }
-                )
-                print(f"移除 空物品 {item} 成功")
+            await self.inventory.delete_one(
+                {
+                    "item": item,
+                    "amount": 0,
+                    "$or": [
+                        {"tag.no_auto_remove": {"$ne": True}},
+                        {"tag.no_auto_remove": {"$exists": False}},
+                    ],
+                }
+            )
+            print(f"移除 空物品 {item} 成功")
 
     async def get_inventory(self) -> dict[str, int]:
         """
