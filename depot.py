@@ -331,12 +331,11 @@ class AsyncDepot:
         輸出當前倉庫內容\n
         建議使用 dict.items() 獲取物品和數量\n
         範例:\n
-         inventory = Depot.get_inventory()\n
-         if inventory is None:
-            ...
-         else:
-            for name, amount in inventory.items():
-                print(name, amount)
+         async def main():
+           db = AsyncDepot()
+           inventory = await db.get_inventory()
+           for name, amount in inventory.items():
+             print(name, amount)
         """
         return {
             items["item"]: items.get("amount", -32768)
