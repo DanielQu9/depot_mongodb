@@ -146,7 +146,7 @@ async def status_data(request: Request):
 @app.get("/stock/input", response_class=HTMLResponse)
 async def stock_input(request: Request):
     """貨物進出 - 框架網頁"""
-    inv: dict = await depot.get_inventory()  # type: ignore
+    inv: dict = await depot.get_inventory()
     existing_items = list(inv.keys()) if inv else None
     return templates.TemplateResponse(
         "stock_input.html", {"request": request, "items": existing_items}
