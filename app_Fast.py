@@ -105,7 +105,7 @@ async def inventory(request: Request):
 @app.get("/records", response_class=HTMLResponse)
 async def records(request: Request):
     """進出貨紀錄 - 輸出框架網頁"""
-    table_list = sorted(depot.date_collections, reverse=True)
+    table_list = sorted(await depot.date_collections, reverse=True)
     return templates.TemplateResponse(
         "records.html", {"request": request, "tables": table_list}
     )

@@ -61,6 +61,7 @@ class Depot:
     - set_tag 設定tag標籤\n
     - get_tag_json 取得該物品的tag頁\n
     - find_records 依據日期尋找資料表\n
+    - date_collections 獲取所有非 inventory 的子資料表\n
     \n
     使用範例: \n
       from depot import Depot, DepotItem
@@ -82,9 +83,6 @@ class Depot:
         # 資料表
         self.inventory = self.db["inventory"]  # 倉庫
         self.collection = self.__today_collection  # 當日交易紀錄
-        self.date_collections = [  # 非 inventory 資料表
-            i for i in self.db.list_collection_names() if i != "inventory"
-        ]
 
         self.remove_on_zero: bool = False  # 是否清除已歸零的倉位
 
@@ -108,7 +106,7 @@ class Depot:
                 print(name, amount)
         """
         Doc = self.inventory.find()
-        if Doc == []:
+        if list(Doc) == []:
             return None
         else:
             return {items["item"]: items.get("amount", -32768) for items in Doc}
@@ -222,11 +220,6 @@ class Depot:
         date: 格式為 YYYY-MM-DD
         """
 
-        # 獲取所有非 inventory 的子資料表
-        self.date_collections = [
-            i for i in self.db.list_collection_names() if i != "inventory"
-        ]
-
         if date not in self.date_collections:
             return None
         return list(self.db[date].find())
@@ -235,6 +228,11 @@ class Depot:
     def __today_collection(self):
         """當日資料表"""
         return self.db[f"{date.today()}"]
+
+    @property
+    def date_collections(self) -> list[str]:
+        """獲取所有非 inventory 的子資料表"""
+        return [i for i in self.db.list_collection_names() if i != "inventory"]
 
     def __init_default_items(self):
         """配合esp, 給資料庫插入三組預設物品"""
@@ -255,6 +253,7 @@ class AsyncDepot:
     - set_tag 設定tag標籤\n
     - get_tag_json 取得該物品的tag頁\n
     - find_records 依據日期尋找資料表\n
+    - date_collections 獲取所有非 inventory 的子資料表\n
     \n
     使用範例:\n
 
@@ -287,8 +286,6 @@ class AsyncDepot:
         # 添加預設資料
         sync_depot = Depot()
         sync_depot._Depot__init_default_items()  # type: ignore
-
-        self.date_collections = sync_depot.date_collections  # 非 inventory 資料表
 
     async def write(self, DItem: DepotItem, source: str = "local") -> None:
         """新增一筆進出貨資料"""
@@ -398,15 +395,14 @@ class AsyncDepot:
         依據日期找資料表, 並回傳其紀錄\n
         date: 格式為 YYYY-MM-DD
         """
-
-        # 獲取所有非 inventory 的子資料表
-        self.date_collections = [
-            i for i in await self.db.list_collection_names() if i != "inventory"
-        ]
-
-        if date not in self.date_collections:
+        if date not in await self.date_collections:
             return None
         return [i async for i in self.db[date].find()]
+
+    @property
+    async def date_collections(self) -> list[str]:
+        """獲取所有非 inventory 的子資料表"""
+        return [i for i in await self.db.list_collection_names() if i != "inventory"]
 
 
 if __name__ == "__main__":
