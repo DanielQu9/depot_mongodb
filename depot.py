@@ -212,6 +212,21 @@ class Depot:
             return False
         return True
 
+    def find_records(self, date: str) -> list | None:
+        """
+        依據日期找資料表, 並回傳其紀錄\n
+        date: 格式為 YYYY-MM-DD
+        """
+
+        # 獲取所有非 inventory 的子資料表
+        date_collections = [
+            i for i in self.db.list_collection_names() if i != "inventory"
+        ]
+
+        if date not in date_collections:
+            return None
+        return list(self.db[date].find())
+
     @property
     def __today_collection(self):
         """當日資料表"""
@@ -369,27 +384,20 @@ class AsyncDepot:
 
         return dict(data).get("tag", {})
 
-
-class DepotMongo(Depot):
-    """對MongoDB的直接操作, 獲取資料表及相關內容"""
-
-    def __init__(self) -> None:
-        """self.date_collections [list]: 非 inventory 的所有子資料表"""
-        super().__init__()
-
-        # 獲取所有非 inventory 的子資料表
-        self.date_collections = [
-            i for i in self.db.list_collection_names() if i != "inventory"
-        ]
-
-    def find_records(self, date: str) -> list | None:
+    async def find_records(self, date: str) -> list[Any] | None:
         """
         依據日期找資料表, 並回傳其紀錄\n
         date: 格式為 YYYY-MM-DD
         """
-        if date not in self.date_collections:
+
+        # 獲取所有非 inventory 的子資料表
+        date_collections = [
+            i for i in await self.db.list_collection_names() if i != "inventory"
+        ]
+
+        if date not in date_collections:
             return None
-        return list(self.db[date].find())
+        return [i async for i in self.db[date].find()]
 
 
 if __name__ == "__main__":
