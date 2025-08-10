@@ -60,6 +60,7 @@ class Depot:
     - in_inventory 該資料是否存在\n
     - set_tag 設定tag標籤\n
     - get_tag_json 取得該物品的tag頁\n
+    - find_records 依據日期尋找資料表\n
     \n
     使用範例: \n
       from depot import Depot, DepotItem
@@ -80,7 +81,10 @@ class Depot:
 
         # 資料表
         self.inventory = self.db["inventory"]  # 倉庫
-        self.collection = self.__today_collection  # 交易紀錄
+        self.collection = self.__today_collection  # 當日交易紀錄
+        self.date_collections = [  # 非 inventory 資料表
+            i for i in self.db.list_collection_names() if i != "inventory"
+        ]
 
         self.remove_on_zero: bool = False  # 是否清除已歸零的倉位
 
@@ -219,11 +223,11 @@ class Depot:
         """
 
         # 獲取所有非 inventory 的子資料表
-        date_collections = [
+        self.date_collections = [
             i for i in self.db.list_collection_names() if i != "inventory"
         ]
 
-        if date not in date_collections:
+        if date not in self.date_collections:
             return None
         return list(self.db[date].find())
 
@@ -250,6 +254,7 @@ class AsyncDepot:
     - get_inventory 輸出當前倉庫\n
     - set_tag 設定tag標籤\n
     - get_tag_json 取得該物品的tag頁\n
+    - find_records 依據日期尋找資料表\n
     \n
     使用範例:\n
 
@@ -282,6 +287,8 @@ class AsyncDepot:
         # 添加預設資料
         sync_depot = Depot()
         sync_depot._Depot__init_default_items()  # type: ignore
+
+        self.date_collections = sync_depot.date_collections  # 非 inventory 資料表
 
     async def write(self, DItem: DepotItem, source: str = "local") -> None:
         """新增一筆進出貨資料"""
@@ -391,11 +398,11 @@ class AsyncDepot:
         """
 
         # 獲取所有非 inventory 的子資料表
-        date_collections = [
+        self.date_collections = [
             i for i in await self.db.list_collection_names() if i != "inventory"
         ]
 
-        if date not in date_collections:
+        if date not in self.date_collections:
             return None
         return [i async for i in self.db[date].find()]
 
