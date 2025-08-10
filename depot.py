@@ -371,9 +371,10 @@ class AsyncDepot:
         tag: 插入標籤\n
         """
         data = await self.inventory.find_one({"item": item})
-        if data == None:
-            print(f"警告: 倉庫內未找到 {item} 請確認已添加物品，已忽略此筆。")
-            return None
+        if data is None:
+            raise DepotError(
+                f"警告: 倉庫內未找到 {item} 請確認已添加物品，已忽略此筆。"
+            )
 
         await self.inventory.update_one(
             {"item": item}, {"$set": {f"tag": tag}}, upsert=True
@@ -385,9 +386,10 @@ class AsyncDepot:
         item: 物品名稱\n
         """
         data = await self.inventory.find_one({"item": item})
-        if data == None:
-            print(f"警告: 倉庫內未找到 {item} 請確認已添加物品，已忽略此筆。")
-            return None
+        if data is None:
+            raise DepotError(
+                f"警告: 倉庫內未找到 {item} 請確認已添加物品，已忽略此筆。"
+            )
 
         return dict(data).get("tag", {})
 
