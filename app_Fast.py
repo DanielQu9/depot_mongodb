@@ -5,8 +5,9 @@ from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from depot import AsyncDepot, DepotItem, DepotError, DepotMongo
-import json
+import markdown
 import httpx
+import json
 
 
 # ---- 初始化配置 ----
@@ -49,7 +50,18 @@ class ConnectionManager:
                 pass
 
 
+def readme_to_html() -> str:
+    """將readme轉成html"""
+    try:
+        with open("README.md", "r", encoding="utf-8") as f:
+            readme_md = f.read()
+        return markdown.markdown(readme_md)
+    except Exception as err:
+        return "<h3>無法讀取 README.md</h3><p>目前無說明文件。</p>"
+
+
 manager = ConnectionManager()
+readme_html = readme_to_html()
 
 
 # ---- 路由定義 ----
@@ -71,7 +83,9 @@ async def index(request: Request):
 @app.get("/home", response_class=HTMLResponse)
 async def home(request: Request):
     """首頁"""
-    return templates.TemplateResponse("home.html", {"request": request})
+    return templates.TemplateResponse(
+        "home.html", {"request": request, "readme_html": readme_html}
+    )
 
 
 @app.get("/esp", response_class=HTMLResponse, name="esp_live")
@@ -212,7 +226,7 @@ async def ws_esp32(websocket: WebSocket):
 
 async def do_depot(data: dict):
     """處理 ESP32 傳來的出貨資料，並寫入 Depot"""
-    if not data or data.get("final", False):
+    if (not data) or (not data.get("final", False)):
         return
     try:
         small = DepotItem("out", "small", data.get("small", 0))

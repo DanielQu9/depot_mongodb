@@ -3,6 +3,7 @@ from flask_sock import Sock
 from depot import Depot, DepotItem, DepotError, DepotMongo
 import threading
 import requests
+import markdown
 import json
 
 
@@ -15,6 +16,19 @@ clients = set()  # websocket-瀏覽器 列隊
 clients_lock = threading.Lock()  # websocket-瀏覽器 鎖
 esp_connected = False  # websocket-esp 列隊
 esp_lock = threading.Lock()  # websocket-esp 鎖
+
+
+def readme_to_html() -> str:
+    """將readme轉成html"""
+    try:
+        with open("README.md", "r", encoding="utf-8") as f:
+            readme_md = f.read()
+        return markdown.markdown(readme_md)
+    except Exception as err:
+        return "<h3>無法讀取 README.md</h3><p>目前無說明文件。</p>"
+
+
+readme_html = readme_to_html()
 
 
 @app.route("/")
@@ -35,7 +49,7 @@ def index():
 @app.route("/home")
 def home():
     """首頁"""
-    return render_template("home.html")
+    return render_template("home.html", readme_html=readme_html)
 
 
 @app.route("/inventory")
