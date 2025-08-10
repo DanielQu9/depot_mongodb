@@ -114,7 +114,7 @@ async def records(request: Request):
 @app.get("/records/data", response_class=HTMLResponse)
 async def records_data(request: Request, date: str):
     """進出貨紀錄 - 輸出紀錄"""
-    data = depot.find_records(date)
+    data = await depot.find_records(date)
     return templates.TemplateResponse(
         "records_data.html", {"request": request, "data": data, "date": date}
     )
