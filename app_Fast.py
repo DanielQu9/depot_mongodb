@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from depot import AsyncDepot, DepotItem, DepotError, DepotMongo
+from depot import AsyncDepot, DepotItem, DepotError
 import markdown
 import httpx
 import json
@@ -17,7 +17,6 @@ templates = Jinja2Templates(directory="templates")  # 模板目錄
 
 # ---- 全域物件初始化 ----
 depot = AsyncDepot()
-mg = DepotMongo()
 
 
 class ConnectionManager:
@@ -106,8 +105,7 @@ async def inventory(request: Request):
 @app.get("/records", response_class=HTMLResponse)
 async def records(request: Request):
     """進出貨紀錄 - 輸出框架網頁"""
-    mg.__init__()  # 初始化mg
-    table_list = sorted(mg.date_collections, reverse=True)
+    table_list = sorted(depot.date_collections, reverse=True)
     return templates.TemplateResponse(
         "records.html", {"request": request, "tables": table_list}
     )
@@ -116,7 +114,7 @@ async def records(request: Request):
 @app.get("/records/data", response_class=HTMLResponse)
 async def records_data(request: Request, date: str):
     """進出貨紀錄 - 輸出紀錄"""
-    data = mg.find_records(date)
+    data = depot.find_records(date)
     return templates.TemplateResponse(
         "records_data.html", {"request": request, "data": data, "date": date}
     )

@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_sock import Sock
-from depot import Depot, DepotItem, DepotError, DepotMongo
+from depot import Depot, DepotItem, DepotError
 import threading
 import requests
 import markdown
@@ -11,7 +11,6 @@ import json
 app = Flask(__name__)
 sock = Sock(app)
 depot = Depot()
-mg = DepotMongo()
 clients = set()  # websocket-瀏覽器 列隊
 clients_lock = threading.Lock()  # websocket-瀏覽器 鎖
 esp_connected = False  # websocket-esp 列隊
@@ -62,8 +61,7 @@ def inventory():
 @app.route("/records")
 def records():
     """進出貨紀錄-輸出列表"""
-    mg.__init__()  # 手動初始化
-    table_list = sorted(mg.date_collections, reverse=True)  # 獲取所有資料表
+    table_list = sorted(depot.date_collections, reverse=True)  # 獲取所有資料表
     # print(f"[flag]--------: {table_list}")
     return render_template("records.html", tables=table_list)
 
@@ -72,7 +70,7 @@ def records():
 def records_data():
     """進出貨紀錄-輸出紀錄"""
     table_name = request.args.get("date")
-    data = mg.find_records(str(table_name))
+    data = depot.find_records(str(table_name))
     return render_template("records_data.html", data=data, date=table_name)
 
 
