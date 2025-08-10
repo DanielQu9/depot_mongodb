@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <title>物品重量管理</title>
@@ -11,6 +12,7 @@
             color: #333;
             display: flex;
         }
+
         .sidebar {
             width: 250px;
             background: #2c3e50;
@@ -18,9 +20,11 @@
             padding: 20px;
             transition: transform 0.3s ease;
         }
+
         .sidebar.hidden {
             transform: translateX(-100%);
         }
+
         .toggle-btn {
             position: absolute;
             top: 20px;
@@ -33,6 +37,7 @@
             border-radius: 4px;
             z-index: 1000;
         }
+
         .main {
             flex: 1;
             display: flex;
@@ -41,23 +46,29 @@
             flex-direction: column;
             padding: 80px 40px 40px 40px;
         }
-        select, button {
+
+        select,
+        button {
             font-size: 1em;
             padding: 6px;
             margin: 10px 0;
         }
+
         .preview-item {
             font-size: 1em;
             margin: 5px 0;
         }
+
         .weight {
             font-size: 2em;
             font-weight: bold;
             margin-top: 20px;
         }
+
         .alert {
             color: red;
         }
+
         .toast {
             position: fixed;
             bottom: 20px;
@@ -69,11 +80,13 @@
             opacity: 0;
             transition: opacity 0.5s ease;
         }
+
         .toast.show {
             opacity: 1;
         }
     </style>
 </head>
+
 <body>
     <div class="sidebar" id="sidebar">
         <br \>
@@ -183,4 +196,5 @@
         setInterval(fetchAndUpdateWeight, 1000);
     </script>
 </body>
+
 </html>

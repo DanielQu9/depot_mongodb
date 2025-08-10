@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
+
 <head>
     <meta charset="UTF-8">
     <title>服務狀態檢查</title>
@@ -11,44 +12,55 @@
             max-width: 700px;
             margin: auto;
         }
+
         h1 {
             text-align: center;
             margin-bottom: 2rem;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
             background-color: white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
-        th, td {
+
+        th,
+        td {
             padding: 12px;
             text-align: left;
             border-bottom: 1px solid #ddd;
         }
+
         .status-online {
             color: green;
         }
+
         .status-connecting {
             color: orange;
         }
+
         .status-offline {
             color: red;
         }
+
         footer {
             margin-top: 2rem;
             text-align: center;
             color: #777;
         }
+
         footer a {
             color: #007bff;
             text-decoration: none;
         }
+
         footer a:hover {
             text-decoration: underline;
         }
     </style>
 </head>
+
 <body>
 
     <h1>服務狀態檢查</h1>
@@ -66,11 +78,11 @@
             <tr>
                 <td>{{ r.name }}</td>
                 <td>
-                  {% if r.url == 'WebSocket' %}
+                    {% if r.url == 'WebSocket' %}
                     <em>WebSocket</em>
-                  {% else %}
+                    {% else %}
                     <a href="{{ r.url }}" target="_blank">{{ r.url }}</a>
-                  {% endif %}
+                    {% endif %}
                 </td>
                 <td>
                     <span class="status-connecting">🟠 連線中</span>
@@ -93,43 +105,44 @@
     </footer>
 
     <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-        const tbody = document.querySelector('#status-table tbody');
-        try {
-            const res = await fetch('{{ url_for("status_data") }}');
-            const data = await res.json();
-            tbody.innerHTML = '';
-            data.results.forEach(svc => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
+        document.addEventListener('DOMContentLoaded', async () => {
+            const tbody = document.querySelector('#status-table tbody');
+            try {
+                const res = await fetch('{{ url_for("status_data") }}');
+                const data = await res.json();
+                tbody.innerHTML = '';
+                data.results.forEach(svc => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
                     <td>${svc.name}</td>
                     <td>
                       <a href="${svc.url}" target="_blank">
                         ${svc.url === 'WebSocket'
-                          ? '<em>WebSocket</em>'
-                          : svc.url}
+                            ? '<em>WebSocket</em>'
+                            : svc.url}
                       </a>
                     </td>
                     <td>
                       <span class="${svc.online
-                          ? 'status-online'
-                          : 'status-offline'}">
+                            ? 'status-online'
+                            : 'status-offline'}">
                         ${svc.online ? '🟢 在線' : '🔴 離線'}
                       </span>
                     </td>`;
-                tbody.appendChild(tr);
-            });
-        } catch (err) {
-            tbody.innerHTML = `
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                tbody.innerHTML = `
                 <tr>
                     <td colspan="3" class="status-offline">
                         無法取得狀態，請稍後再試。
                     </td>
                 </tr>`;
-            console.error('Fetch status_data error:', err);
-        }
-    });
+                console.error('Fetch status_data error:', err);
+            }
+        });
     </script>
 
 </body>
+
 </html>
