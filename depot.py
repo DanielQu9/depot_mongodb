@@ -105,8 +105,8 @@ class Depot:
             for name, amount in inventory.items():
                 print(name, amount)
         """
-        Doc = self.inventory.find()
-        if list(Doc) == []:
+        Doc = list(self.inventory.find())
+        if Doc == []:
             return None
         else:
             return {items["item"]: items.get("amount", -32768) for items in Doc}
