@@ -7,6 +7,7 @@ flask-sock
 requests
 line-bot-sdk
 python-dotenv
+makedown
 
 # web_fastapi:
 fastapi
