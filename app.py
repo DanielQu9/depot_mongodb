@@ -215,7 +215,7 @@ def do_depot(jsonfile):
     """寫入esp32出貨資料"""
     data = jsonfile
     final = data.get("final", False)
-    if (not data) or (final):
+    if (not data) or (not final):
         return
 
     # 處理資料
