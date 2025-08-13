@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>倉庫管理系統</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            backdrop-filter: blur(10px);
+        }
+
+        /* 左側邊欄 */
+        .sidebar {
+            width: 280px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 2px 0 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            border-radius: 0 20px 20px 0;
+            overflow: hidden;
+        }
+
+        .logo {
+            padding: 30px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            border-radius: 0 20px 0 0;
+        }
+
+        .logo h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .logo p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .nav-menu {
+            flex: 1;
+            padding: 20px 0;
+            overflow-y: auto;
+        }
+
+        .nav-item {
+            margin: 5px 15px;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .nav-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            text-decoration: none;
+            color: #4a5568;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        .nav-link:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .nav-link i {
+            margin-right: 12px;
+            font-size: 18px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* 右側內容區 */
+        .main-content {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.9);
+            margin: 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(20px);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .content-header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px 30px;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .content-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #2d3748;
+            display: flex;
+            align-items: center;
+        }
+
+        .content-title i {
+            margin-right: 10px;
+            color: #667eea;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .content-frame {
+            width: 100%;
+            height: calc(100% - 80px);
+            border: none;
+            background: white;
+        }
+
+        /* 載入動畫 */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #667eea;
+        }
+
+        .spinner {
+            border: 3px solid rgba(102, 126, 234, 0.1);
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 響應式設計 */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 70px;
+            }
+
+            .nav-link span {
+                display: none;
+            }
+
+            .logo h1, .logo p {
+                display: none;
+            }
+        }
+
+        /* 美化滾動條 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 左側邊欄 -->
+        <div class="sidebar">
+            <div class="logo">
+                <h1><i class="fas fa-warehouse"></i></h1>
+                <h1>倉庫系統</h1>
+                <p>Depot Management</p>
+            </div>
+            
+            <nav class="nav-menu">
+                {% for item in side_items %}
+                <div class="nav-item">
+                    <a href="#" class="nav-link" data-endpoint="{{ item.endpoint }}">
+                        <i class="{% if item.endpoint == 'home' %}fas fa-home
+                                  {% elif item.endpoint == 'esp_live' %}fas fa-broadcast-tower
+                                  {% elif item.endpoint == 'inventory' %}fas fa-boxes
+                                  {% elif item.endpoint == 'stock_input' %}fas fa-plus-circle
+                                  {% elif item.endpoint == 'records' %}fas fa-history
+                                  {% elif item.endpoint == 'status' %}fas fa-heartbeat
+                                  {% else %}fas fa-file{% endif %}"></i>
+                        <span>{{ item.name }}</span>
+                    </a>
+                </div>
+                {% endfor %}
+            </nav>
+        </div>
+
+        <!-- 右側內容區 -->
+        <div class="main-content">
+            <div class="content-header">
+                <div class="content-title">
+                    <i class="fas fa-home"></i>
+                    <span id="page-title">首頁</span>
+                </div>
+                <button class="refresh-btn" onclick="refreshFrame()">
+                    <i class="fas fa-sync-alt"></i> 重新整理
+                </button>
+            </div>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>載入中...</p>
+            </div>
+            
+            <iframe id="content-frame" class="content-frame" src="/home" style="display: none;"></iframe>
+        </div>
+    </div>
+
+    <script>
+        // 頁面圖標對應
+        const pageIcons = {
+            'home': 'fas fa-home',
+            'esp_live': 'fas fa-broadcast-tower', 
+            'inventory': 'fas fa-boxes',
+            'stock_input': 'fas fa-plus-circle',
+            'records': 'fas fa-history',
+            'status': 'fas fa-heartbeat'
+        };
+
+        // 頁面名稱對應
+        const pageNames = {
+            'home': '首頁',
+            'esp_live': 'ESP32即時顯示',
+            'inventory': '倉庫',
+            'stock_input': '出/入貨物', 
+            'records': '貨物紀錄',
+            'status': '狀態'
+        };
+
+        // 端點到實際 URL 的對應
+        const endpointToUrl = {
+            'home': '/home',
+            'esp_live': '/esp',
+            'inventory': '/inventory',
+            'stock_input': '/stock/input',
+            'records': '/records',
+            'status': '/status'
+        };
+
+        // 導航點擊事件
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // 移除所有 active 類別
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                
+                // 添加 active 類別到當前連結
+                this.classList.add('active');
+                
+                // 取得端點
+                const endpoint = this.dataset.endpoint;
+                
+                // 更新標題和圖標
+                const titleElement = document.getElementById('page-title');
+                const titleIcon = document.querySelector('.content-title i');
+                
+                titleElement.textContent = pageNames[endpoint] || endpoint;
+                titleIcon.className = pageIcons[endpoint] || 'fas fa-file';
+                
+                // 載入頁面
+                loadPage(endpoint);
+            });
+        });
+
+        // 載入頁面函數
+        function loadPage(endpoint) {
+            const frame = document.getElementById('content-frame');
+            const loading = document.getElementById('loading');
+            
+            // 顯示載入動畫
+            loading.style.display = 'block';
+            frame.style.display = 'none';
+            
+            // 使用正確的 URL 路徑
+            const url = endpointToUrl[endpoint] || `/${endpoint}`;
+            frame.src = url;
+            
+            // iframe 載入完成後隱藏載入動畫
+            frame.onload = function() {
+                loading.style.display = 'none';
+                frame.style.display = 'block';
+            };
+        }
+
+        // 重新整理按鈕
+        function refreshFrame() {
+            const frame = document.getElementById('content-frame');
+            frame.src = frame.src;
+        }
+
+        // 頁面載入完成後，預設選擇首頁
+        document.addEventListener('DOMContentLoaded', function() {
+            const homeLink = document.querySelector('[data-endpoint="home"]');
+            if (homeLink) {
+                homeLink.classList.add('active');
+            }
+            
+            // 初始載入首頁
+            setTimeout(() => {
+                const loading = document.getElementById('loading');
+                const frame = document.getElementById('content-frame');
+                loading.style.display = 'none';
+                frame.style.display = 'block';
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
