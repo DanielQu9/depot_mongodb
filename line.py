@@ -90,6 +90,13 @@ def handle_message(event):
                         uri="https://depot-line.dx-q.net/line_web_menu",
                     ),
                 ),
+                ButtonComponent(
+                    style="secondary",
+                    action=URIAction(
+                        label="[TEST]新版前台網站",
+                        uri="https://depot-line.dx-q.net/line_web_menu?new=1",
+                    ),
+                ),
                 # ButtonComponent(
                 #     style="secondary",
                 #     action=MessageAction(label="（佔位按鈕）", text="!todo"),
