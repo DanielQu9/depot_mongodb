@@ -51,6 +51,9 @@ def index():
         {"name": "狀態", "endpoint": "status"},
         # 日後再加頁面，就在這邊添加
     ]
+    if request.args.get("new") == "1":
+        return render_template("new_base.html", side_items=side_items)
+
     return render_template("base.html", side_items=side_items)
 
 

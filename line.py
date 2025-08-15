@@ -44,6 +44,8 @@ def status():
 
 @app.route("/line_web_menu")
 def line_web_menu():
+    if request.args.get("new") == "1":
+        return render_template("new_line_menu.html")
     return render_template("line_web_menu.html")
 
 
