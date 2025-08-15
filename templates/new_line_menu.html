@@ -266,6 +266,7 @@
           sendUrl: "http://127.0.0.1:5000/api/send-command",
           xarmUrl: "http://127.0.0.1:5000/api/xarm-command",
           serverUrl: "https://depot-web.dx-q.net/menu_post",
+          // serverUrl: "http://127.0.0.1:5000/menu_post",
           timeout: 10000
         };
         this.isProcessing = false; // 防止重複提交
@@ -475,7 +476,7 @@
 
           if (deviceName === "伺服器") {
             requestBody = {
-              order_items: this.currentOrder,
+              items: this.currentOrder,
               timestamp: new Date().toISOString(),
               source: "ESP32智能取料系統"
             };
