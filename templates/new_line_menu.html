@@ -265,7 +265,8 @@
         this.apiConfig = {
           sendUrl: "http://127.0.0.1:5000/api/send-command",
           xarmUrl: "http://127.0.0.1:5000/api/xarm-command",
-          timeout: 5000
+          serverUrl: "https://depot-web.dx-q.net/menu_post",
+          timeout: 10000
         };
         this.isProcessing = false; // 防止重複提交
 
@@ -418,14 +419,32 @@
           this.toggleLoading(true);
           this.toggleButton(sendButton, false);
 
-          // 序列發送請求，避免並發問題
-          await this.sendRequest(this.apiConfig.sendUrl, "自走車");
-          console.log('自走車發送成功'); // Debug log
-          
-          await this.sendRequest(this.apiConfig.xarmUrl, "機械臂");
-          console.log('機械臂發送成功'); // Debug log
+          const promises = [
+            this.sendRequest(this.apiConfig.sendUrl, "自走車"),
+            this.sendRequest(this.apiConfig.xarmUrl, "機械臂"),
+            this.sendRequest(this.apiConfig.serverUrl, "伺服器")
+          ];
 
-          this.showToast("✅ 指令已成功送出至自走車與機械臂！", "success");
+          const results = await Promise.allSettled(promises);
+          
+          const successes = results.filter(result => result.status === 'fulfilled');
+          const failures = results.filter(result => result.status === 'rejected');
+          
+          console.log('發送結果:', { successes: successes.length, failures: failures.length });
+
+          if (successes.length === 3) {
+            this.showToast("✅ 指令已成功送出至自走車、機械臂與伺服器！", "success");
+          } else if (successes.length > 0) {
+            const failedTargets = [];
+            if (results[0].status === 'rejected') failedTargets.push('自走車');
+            if (results[1].status === 'rejected') failedTargets.push('機械臂');
+            if (results[2].status === 'rejected') failedTargets.push('伺服器');
+            
+            this.showToast(`⚠️ 部分發送成功，失敗目標：${failedTargets.join('、')}`, "warning");
+            console.warn('部分發送失敗:', failures.map(f => f.reason));
+          } else {
+            throw new Error('所有目標發送失敗');
+          }
 
         } catch (error) {
           console.error('發送指令時發生錯誤:', error);
@@ -446,32 +465,46 @@
         const timeoutId = setTimeout(() => controller.abort(), this.apiConfig.timeout);
 
         try {
-          console.log(`發送到 ${deviceName}:`, url, this.currentOrder); // Debug log
+          console.log(`發送到 ${deviceName}:`, url, this.currentOrder);
+          
+          let requestBody;
+          let headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          };
+
+          if (deviceName === "伺服器") {
+            requestBody = {
+              order_items: this.currentOrder,
+              timestamp: new Date().toISOString(),
+              source: "ESP32智能取料系統"
+            };
+          } else {
+            requestBody = { items: this.currentOrder };
+          }
           
           const response = await fetch(url, {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Accept": "application/json"
-            },
-            body: JSON.stringify({ items: this.currentOrder }),
+            headers: headers,
+            body: JSON.stringify(requestBody),
             signal: controller.signal
           });
 
           clearTimeout(timeoutId);
 
           if (!response.ok) {
-            throw new Error(`${deviceName}回應錯誤: ${response.status}`);
+            const errorText = await response.text().catch(() => 'Unknown error');
+            throw new Error(`${deviceName}回應錯誤 (${response.status}): ${errorText}`);
           }
 
-          const result = await response.json();
-          console.log(`${deviceName}回應:`, result); // Debug log
+          const result = await response.json().catch(() => ({ success: true }));
+          console.log(`${deviceName}回應:`, result);
           return result;
           
         } catch (error) {
           clearTimeout(timeoutId);
           if (error.name === 'AbortError') {
-            throw new Error(`${deviceName}請求超時`);
+            throw new Error(`${deviceName}請求超時 (${this.apiConfig.timeout/1000}秒)`);
           }
           throw new Error(`${deviceName}發送失敗: ${error.message}`);
         }
