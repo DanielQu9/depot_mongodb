@@ -112,8 +112,8 @@
     }
 
     function sendToESP32() {
-      const SEND_URL = "http://192.168.0.170/api/send-command";
-      const XARM_URL = "http://192.168.0.180/api/xarm-command";
+      const SEND_URL = "http://127.0.0.1:5000/api/send-command";
+      const XARM_URL = "http://127.0.0.1:5000/api/xarm-command";
 
       if (currentOrder.length === 0) {
         alert("請先選擇物料");
@@ -123,6 +123,8 @@
       // 建立 AbortController
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      let timeoutId2; // 提升 timeoutId2 的作用域
 
       // 先送給自走車
       fetch(SEND_URL, {
@@ -136,7 +138,7 @@
           if (!res1.ok) throw new Error("自走車發送失敗");
 
           const controller2 = new AbortController();
-          const timeoutId2 = setTimeout(() => controller2.abort(), 5000);
+          timeoutId2 = setTimeout(() => controller2.abort(), 5000); // 定義 timeoutId2
 
           // 再送給機械臂
           return fetch(XARM_URL, {
@@ -147,7 +149,7 @@
           });
         })
         .then(res2 => {
-          clearTimeout(timeoutId2);
+          clearTimeout(timeoutId2); // 正確清除 timeoutId2
           if (!res2.ok) throw new Error("機械臂發送失敗");
           alert("✅ 指令已成功送出至自走車與機械臂！");
         })
