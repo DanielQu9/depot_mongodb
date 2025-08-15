@@ -138,6 +138,11 @@ def stock_submit():
         }
 
 
+@app.route("/menu_post", methods=["POST"])
+def menu_data():
+    return jsonify()
+
+
 @app.route("/esp")
 def esp_live():
     """即時顯示秤重重量"""
@@ -197,7 +202,7 @@ def ws_esp32(ws):
                     pass
 
         # 處理資料
-        do_depot(json.loads(raw))
+        # do_depot(json.loads(raw), "esp")
 
     # ESP32 斷線時，更新狀態並廣播
     with esp_lock:
@@ -211,7 +216,7 @@ def ws_esp32(ws):
                 pass
 
 
-def do_depot(data: dict):
+def do_depot(data: dict, source: str):
     """寫入esp32出貨資料"""
     if (not data) or (not data.get("final", False)):
         return
@@ -222,9 +227,9 @@ def do_depot(data: dict):
         big = DepotItem("out", "big", data["big"])
         tube = DepotItem("out", "tube", data["tube"])
 
-        depot.write(small, "esp")
-        depot.write(big, "esp")
-        depot.write(tube, "esp")
+        depot.write(small, source)
+        depot.write(big, source)
+        depot.write(tube, source)
         print(f"[Depot]-info: write_down")
     except DepotError as err:
         print(f"[Depot]-error: {err}")
