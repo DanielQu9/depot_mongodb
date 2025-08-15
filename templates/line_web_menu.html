@@ -2,171 +2,171 @@
 <html lang="zh-Hant">
 
 <head>
-  <meta charset="UTF-8">
-  <title>ESP32 物料選擇系統</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      background-color: #f4f4f4;
-      margin: 0;
-    }
+    <meta charset="UTF-8">
+    <title>ESP32 物料選擇系統</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+            margin: 0;
+        }
 
-    .container {
-      background: white;
-      padding: 20px 30px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      text-align: center;
-      width: 300px;
-    }
+        .container {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 300px;
+        }
 
-    select,
-    button {
-      width: 100%;
-      padding: 8px;
-      margin: 10px 0;
-      font-size: 16px;
-    }
+        select,
+        button {
+            width: 100%;
+            padding: 8px;
+            margin: 10px 0;
+            font-size: 16px;
+        }
 
-    .btn {
-      border: none;
-      border-radius: 5px;
-      color: white;
-    }
+        .btn {
+            border: none;
+            border-radius: 5px;
+            color: white;
+        }
 
-    .send {
-      background-color: #4CAF50;
-    }
+        .send {
+            background-color: #4CAF50;
+        }
 
-    .reset {
-      background-color: #f44336;
-    }
+        .reset {
+            background-color: #f44336;
+        }
 
-    ul {
-      text-align: left;
-      padding-left: 20px;
-    }
-  </style>
+        ul {
+            text-align: left;
+            padding-left: 20px;
+        }
+    </style>
 </head>
 
 <body>
-  <div class="container">
-    <h2>ESP32 取料介面</h2>
-    <label>小螺母：</label>
-    <select id="小螺母"></select>
-    <label>大螺母：</label>
-    <select id="大螺母"></select>
-    <label>鐵管：</label>
-    <select id="鐵管"></select>
-    <label>塑膠管：</label>
-    <select id="塑膠管"></select>
+    <div class="container">
+        <h2>ESP32 取料介面</h2>
+        <label>小螺母：</label>
+        <select id="小螺母"></select>
+        <label>大螺母：</label>
+        <select id="大螺母"></select>
+        <label>鐵管：</label>
+        <select id="鐵管"></select>
+        <label>塑膠管：</label>
+        <select id="塑膠管"></select>
 
-    <button class="btn send" onclick="confirmSelection()">確認</button>
-    <h3>選擇清單：</h3>
-    <ul id="orderSummary"></ul>
-    <button class="btn send" onclick="sendToESP32()">確認送出</button>
-    <button class="btn reset" onclick="resetOrder()">重新選料</button>
-  </div>
+        <button class="btn send" onclick="confirmSelection()">確認</button>
+        <h3>選擇清單：</h3>
+        <ul id="orderSummary"></ul>
+        <button class="btn send" onclick="sendToESP32()">確認送出</button>
+        <button class="btn reset" onclick="resetOrder()">重新選料</button>
+    </div>
 
-  <script>
-    let currentOrder = [];
+    <script>
+        let currentOrder = [];
 
-    function generateOptions() {
-      let html = "";
-      for (let i = 0; i <= 10; i++) {
-        html += `<option value="${i}">${i} 個</option>`;
-      }
-      return html;
-    }
-
-    ["小螺母", "大螺母", "鐵管", "塑膠管"].forEach(id => {
-      document.getElementById(id).innerHTML = generateOptions();
-    });
-
-    function confirmSelection() {
-      const selections = ["小螺母", "大螺母", "鐵管", "塑膠管"];
-      currentOrder = [];
-
-      selections.forEach(item => {
-        const qty = parseInt(document.getElementById(item).value);
-        if (qty > 0) {
-          currentOrder.push({ material: item, quantity: qty });
+        function generateOptions() {
+            let html = "";
+            for (let i = 0; i <= 10; i++) {
+                html += `<option value="${i}">${i} 個</option>`;
+            }
+            return html;
         }
-      });
 
-      updateSummary();
-    }
-
-    function updateSummary() {
-      const summary = document.getElementById("orderSummary");
-      summary.innerHTML = "";
-      currentOrder.forEach(item => {
-        const li = document.createElement("li");
-        li.textContent = `${item.material}：${item.quantity} 個`;
-        summary.appendChild(li);
-      });
-    }
-
-    function sendToESP32() {
-      const SEND_URL = "http://127.0.0.1:5000/api/send-command";
-      const XARM_URL = "http://127.0.0.1:5000/api/xarm-command";
-
-      if (currentOrder.length === 0) {
-        alert("請先選擇物料");
-        return;
-      }
-
-      // 建立 AbortController
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-      let timeoutId2; // 提升 timeoutId2 的作用域
-
-      // 先送給自走車
-      fetch(SEND_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: currentOrder }),
-        signal: controller.signal
-      })
-        .then(res1 => {
-          clearTimeout(timeoutId);
-          if (!res1.ok) throw new Error("自走車發送失敗");
-
-          const controller2 = new AbortController();
-          timeoutId2 = setTimeout(() => controller2.abort(), 5000); // 定義 timeoutId2
-
-          // 再送給機械臂
-          return fetch(XARM_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ items: currentOrder }),
-            signal: controller2.signal
-          });
-        })
-        .then(res2 => {
-          clearTimeout(timeoutId2); // 正確清除 timeoutId2
-          if (!res2.ok) throw new Error("機械臂發送失敗");
-          alert("✅ 指令已成功送出至自走車與機械臂！");
-        })
-        .catch(err => {
-          alert("❌ 發送失敗：" + err.message);
+        ["小螺母", "大螺母", "鐵管", "塑膠管"].forEach(id => {
+            document.getElementById(id).innerHTML = generateOptions();
         });
-    }
+
+        function confirmSelection() {
+            const selections = ["小螺母", "大螺母", "鐵管", "塑膠管"];
+            currentOrder = [];
+
+            selections.forEach(item => {
+                const qty = parseInt(document.getElementById(item).value);
+                if (qty > 0) {
+                    currentOrder.push({ material: item, quantity: qty });
+                }
+            });
+
+            updateSummary();
+        }
+
+        function updateSummary() {
+            const summary = document.getElementById("orderSummary");
+            summary.innerHTML = "";
+            currentOrder.forEach(item => {
+                const li = document.createElement("li");
+                li.textContent = `${item.material}：${item.quantity} 個`;
+                summary.appendChild(li);
+            });
+        }
+
+        function sendToESP32() {
+            const SEND_URL = "http://127.0.0.1:5000/api/send-command";
+            const XARM_URL = "http://127.0.0.1:5000/api/xarm-command";
+
+            if (currentOrder.length === 0) {
+                alert("請先選擇物料");
+                return;
+            }
+
+            // 建立 AbortController
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+            let timeoutId2; // 提升 timeoutId2 的作用域
+
+            // 先送給自走車
+            fetch(SEND_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ items: currentOrder }),
+                signal: controller.signal
+            })
+                .then(res1 => {
+                    clearTimeout(timeoutId);
+                    if (!res1.ok) throw new Error("自走車發送失敗");
+
+                    const controller2 = new AbortController();
+                    timeoutId2 = setTimeout(() => controller2.abort(), 5000); // 定義 timeoutId2
+
+                    // 再送給機械臂
+                    return fetch(XARM_URL, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ items: currentOrder }),
+                        signal: controller2.signal
+                    });
+                })
+                .then(res2 => {
+                    clearTimeout(timeoutId2); // 正確清除 timeoutId2
+                    if (!res2.ok) throw new Error("機械臂發送失敗");
+                    alert("✅ 指令已成功送出至自走車與機械臂！");
+                })
+                .catch(err => {
+                    alert("❌ 發送失敗：" + err.message);
+                });
+        }
 
 
-    function resetOrder() {
-      ["小螺母", "大螺母", "鐵管", "塑膠管"].forEach(id => {
-        document.getElementById(id).value = 0;
-      });
-      currentOrder = [];
-      document.getElementById("orderSummary").innerHTML = "";
-    }
-  </script>
+        function resetOrder() {
+            ["小螺母", "大螺母", "鐵管", "塑膠管"].forEach(id => {
+                document.getElementById(id).value = 0;
+            });
+            currentOrder = [];
+            document.getElementById("orderSummary").innerHTML = "";
+        }
+    </script>
 </body>
 
 </html>

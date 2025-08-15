@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="UTF-8">
+  <title>ESP32 物料選擇系統</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      width: 100%;
+      max-width: 400px;
+      color: white;
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 24px;
+      font-weight: 300;
+      margin-bottom: 30px;
+      background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    select {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      color: white;
+      font-size: 16px;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+
+    select:focus {
+      border-color: rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    }
+
+    select option {
+      background: rgba(102, 126, 234, 0.9);
+      color: white;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .btn:before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    .btn:hover:not(:disabled):before {
+      left: 100%;
+    }
+
+    .btn-confirm {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      color: white;
+      box-shadow: 0 8px 20px rgba(79, 172, 254, 0.3);
+    }
+
+    .btn-confirm:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 25px rgba(79, 172, 254, 0.4);
+    }
+
+    .btn-send {
+      background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+      color: white;
+      box-shadow: 0 8px 20px rgba(250, 112, 154, 0.3);
+    }
+
+    .btn-send:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 25px rgba(250, 112, 154, 0.4);
+    }
+
+    .btn-reset {
+      background: linear-gradient(135deg, #ff6b6b 0%, #ffa726 100%);
+      color: white;
+      box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3);
+    }
+
+    .btn-reset:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 25px rgba(255, 107, 107, 0.4);
+    }
+
+    .summary-section {
+      margin: 30px 0;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 15px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    h3 {
+      margin-top: 0;
+      font-size: 18px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    li {
+      background: rgba(255, 255, 255, 0.1);
+      margin: 8px 0;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border-left: 4px solid #4facfe;
+      font-size: 14px;
+      backdrop-filter: blur(5px);
+    }
+
+    .loading {
+      display: none;
+      margin: 10px 0;
+    }
+
+    .spinner {
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top: 3px solid #4facfe;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .empty-state {
+      color: rgba(255, 255, 255, 0.6);
+      font-style: italic;
+      padding: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h2>ESP32 智能取料系統</h2>
+
+    <div class="form-group">
+      <label for="小螺母">小螺母</label>
+      <select id="小螺母"></select>
+    </div>
+
+    <div class="form-group">
+      <label for="大螺母">大螺母</label>
+      <select id="大螺母"></select>
+    </div>
+
+    <div class="form-group">
+      <label for="鐵管">鐵管</label>
+      <select id="鐵管"></select>
+    </div>
+
+    <div class="form-group">
+      <label for="塑膠管">塑膠管</label>
+      <select id="塑膠管"></select>
+    </div>
+
+    <!-- 移除 onclick 屬性，改用純事件委託 -->
+    <button class="btn btn-confirm">確認選擇</button>
+
+    <div class="summary-section">
+      <h3>📋 選擇清單</h3>
+      <ul id="orderSummary">
+        <div class="empty-state">尚未選擇任何物料</div>
+      </ul>
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>正在發送指令...</p>
+    </div>
+
+    <button class="btn btn-send">🚀 確認送出</button>
+    <button class="btn btn-reset">🔄 重新選料</button>
+  </div>
+
+  <script>
+    class MaterialSelector {
+      constructor() {
+        this.currentOrder = [];
+        this.materials = ["小螺母", "大螺母", "鐵管", "塑膠管"];
+        this.apiConfig = {
+          sendUrl: "http://127.0.0.1:5000/api/send-command",
+          xarmUrl: "http://127.0.0.1:5000/api/xarm-command",
+          timeout: 5000
+        };
+        this.isProcessing = false; // 防止重複提交
+
+        this.init();
+      }
+
+      init() {
+        this.generateSelectOptions();
+        this.bindEvents();
+        this.updateSummary();
+      }
+
+      generateSelectOptions() {
+        const optionsHtml = Array.from({ length: 11 }, (_, i) =>
+          `<option value="${i}">${i === 0 ? '不選擇' : `${i} 個`}</option>`
+        ).join('');
+
+        this.materials.forEach(material => {
+          const selectElement = document.getElementById(material);
+          if (selectElement) {
+            selectElement.innerHTML = optionsHtml;
+          }
+        });
+      }
+
+      bindEvents() {
+        // 使用事件委託來處理按鈕點擊
+        document.addEventListener('click', (e) => {
+          // 防止重複觸發
+          if (this.isProcessing) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+          }
+
+          if (e.target.matches('.btn-confirm')) {
+            e.preventDefault();
+            this.confirmSelection(e);
+          } else if (e.target.matches('.btn-send')) {
+            e.preventDefault();
+            this.sendToESP32();
+          } else if (e.target.matches('.btn-reset')) {
+            e.preventDefault();
+            this.resetOrder(e);
+          }
+        });
+
+        // 監聽選擇框變化，提供即時預覽
+        this.materials.forEach(material => {
+          const selectElement = document.getElementById(material);
+          if (selectElement) {
+            selectElement.addEventListener('change', () => {
+              this.previewSelection();
+            });
+          }
+        });
+      }
+
+      previewSelection() {
+        // 即時預覽選擇，但不確認
+        const tempOrder = [];
+        this.materials.forEach(material => {
+          const qty = parseInt(document.getElementById(material)?.value || 0);
+          if (qty > 0) {
+            tempOrder.push({ material, quantity: qty });
+          }
+        });
+
+        // 視覺提示是否有變更
+        const hasChanges = !this.arraysEqual(tempOrder, this.currentOrder);
+        const confirmBtn = document.querySelector('.btn-confirm');
+        if (confirmBtn) {
+          confirmBtn.style.opacity = hasChanges ? '1' : '0.7';
+        }
+      }
+
+      confirmSelection(event) {
+        if (this.isProcessing) return;
+
+        try {
+          this.isProcessing = true;
+          const newOrder = [];
+
+          this.materials.forEach(material => {
+            const element = document.getElementById(material);
+            if (element) {
+              const qty = parseInt(element.value || 0);
+              if (qty > 0) {
+                newOrder.push({ material, quantity: qty });
+              }
+            }
+          });
+
+          this.currentOrder = newOrder;
+          this.updateSummary();
+          this.addButtonFeedback(event.target);
+
+          // 成功提示
+          if (newOrder.length > 0) {
+            this.showToast("✅ 選擇已確認", "success");
+          }
+
+        } catch (error) {
+          console.error('確認選擇時發生錯誤:', error);
+          this.showToast("❌ 確認選擇失敗", "error");
+        } finally {
+          // 短暫延遲後重置處理狀態
+          setTimeout(() => {
+            this.isProcessing = false;
+          }, 300);
+        }
+      }
+
+      updateSummary() {
+        const summaryElement = document.getElementById("orderSummary");
+        if (!summaryElement) return;
+
+        summaryElement.innerHTML = "";
+
+        if (this.currentOrder.length === 0) {
+          summaryElement.innerHTML = '<div class="empty-state">尚未選擇任何物料</div>';
+          return;
+        }
+
+        const fragment = document.createDocumentFragment();
+        this.currentOrder.forEach(item => {
+          const li = document.createElement("li");
+          li.innerHTML = `<strong>${this.escapeHtml(item.material)}</strong>：${item.quantity} 個`;
+          fragment.appendChild(li);
+        });
+
+        summaryElement.appendChild(fragment);
+      }
+
+      async sendToESP32() {
+        if (this.isProcessing) return;
+        
+        if (this.currentOrder.length === 0) {
+          this.showToast("⚠️ 請先選擇物料", "warning");
+          return;
+        }
+
+        const sendButton = document.querySelector('.btn-send');
+
+        try {
+          this.isProcessing = true;
+          console.log('開始發送指令...', this.currentOrder); // Debug log
+          
+          // 顯示載入狀態
+          this.toggleLoading(true);
+          this.toggleButton(sendButton, false);
+
+          // 序列發送請求，避免並發問題
+          await this.sendRequest(this.apiConfig.sendUrl, "自走車");
+          console.log('自走車發送成功'); // Debug log
+          
+          await this.sendRequest(this.apiConfig.xarmUrl, "機械臂");
+          console.log('機械臂發送成功'); // Debug log
+
+          this.showToast("✅ 指令已成功送出至自走車與機械臂！", "success");
+
+        } catch (error) {
+          console.error('發送指令時發生錯誤:', error);
+          this.showToast(`❌ 發送失敗：${error.message}`, "error");
+        } finally {
+          this.toggleLoading(false);
+          this.toggleButton(sendButton, true);
+          
+          // 延遲重置處理狀態，防止快速重複點擊
+          setTimeout(() => {
+            this.isProcessing = false;
+          }, 1000);
+        }
+      }
+
+      async sendRequest(url, deviceName) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.apiConfig.timeout);
+
+        try {
+          console.log(`發送到 ${deviceName}:`, url, this.currentOrder); // Debug log
+          
+          const response = await fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
+            body: JSON.stringify({ items: this.currentOrder }),
+            signal: controller.signal
+          });
+
+          clearTimeout(timeoutId);
+
+          if (!response.ok) {
+            throw new Error(`${deviceName}回應錯誤: ${response.status}`);
+          }
+
+          const result = await response.json();
+          console.log(`${deviceName}回應:`, result); // Debug log
+          return result;
+          
+        } catch (error) {
+          clearTimeout(timeoutId);
+          if (error.name === 'AbortError') {
+            throw new Error(`${deviceName}請求超時`);
+          }
+          throw new Error(`${deviceName}發送失敗: ${error.message}`);
+        }
+      }
+
+      resetOrder(event) {
+        if (this.isProcessing) return;
+
+        try {
+          this.isProcessing = true;
+          
+          this.materials.forEach(material => {
+            const element = document.getElementById(material);
+            if (element) {
+              element.value = 0;
+            }
+          });
+
+          this.currentOrder = [];
+          this.updateSummary();
+          this.addButtonFeedback(event.target);
+          this.showToast("🔄 已重設選料", "info");
+
+        } catch (error) {
+          console.error('重設時發生錯誤:', error);
+          this.showToast("❌ 重設失敗", "error");
+        } finally {
+          setTimeout(() => {
+            this.isProcessing = false;
+          }, 300);
+        }
+      }
+
+      // 工具方法
+      addButtonFeedback(button) {
+        if (!button) return;
+
+        button.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+          button.style.transform = '';
+        }, 150);
+      }
+
+      toggleLoading(show) {
+        const loadingElement = document.getElementById("loading");
+        if (loadingElement) {
+          loadingElement.style.display = show ? "block" : "none";
+        }
+      }
+
+      toggleButton(button, enabled) {
+        if (!button) return;
+
+        button.disabled = !enabled;
+        button.style.opacity = enabled ? '1' : '0.6';
+        button.style.cursor = enabled ? 'pointer' : 'not-allowed';
+      }
+
+      escapeHtml(text) {
+        const map = {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, m => map[m]);
+      }
+
+      arraysEqual(arr1, arr2) {
+        if (arr1.length !== arr2.length) return false;
+        return arr1.every((item, index) => {
+          const other = arr2[index];
+          return item.material === other?.material && item.quantity === other?.quantity;
+        });
+      }
+
+      showToast(message, type = "info") {
+        // 移除現有的 toast
+        const existingToast = document.querySelector('.custom-toast');
+        if (existingToast) {
+          existingToast.remove();
+        }
+
+        const colors = {
+          success: '#4CAF50',
+          error: '#f44336',
+          warning: '#ff9800',
+          info: '#2196F3'
+        };
+
+        const toast = document.createElement('div');
+        toast.className = 'custom-toast';
+        toast.style.cssText = `
+          position: fixed;
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%) translateY(-20px);
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(20px);
+          color: #333;
+          padding: 15px 25px;
+          border-radius: 10px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+          z-index: 1000;
+          font-weight: 500;
+          border-left: 4px solid ${colors[type] || colors.info};
+          opacity: 0;
+          transition: all 0.3s ease;
+          max-width: 90vw;
+          word-wrap: break-word;
+        `;
+
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        // 觸發進入動畫
+        requestAnimationFrame(() => {
+          toast.style.opacity = '1';
+          toast.style.transform = 'translateX(-50%) translateY(0)';
+        });
+
+        // 自動移除
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateX(-50%) translateY(-20px)';
+          setTimeout(() => {
+            if (toast.parentNode) {
+              toast.parentNode.removeChild(toast);
+            }
+          }, 300);
+        }, 3000);
+      }
+    }
+
+    // 初始化應用
+    document.addEventListener('DOMContentLoaded', () => {
+      window.materialSelector = new MaterialSelector();
+    });
+  </script>
+</body>
+
+</html>
