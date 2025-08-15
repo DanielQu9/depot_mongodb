@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from depot import AsyncDepot, DepotItem, DepotError
@@ -14,6 +15,12 @@ import json
 app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
 app.mount("/static", StaticFiles(directory="static"), name="static")  # 掛載靜態資源
 templates = Jinja2Templates(directory="templates")  # 模板目錄
+app.add_middleware(  # 允許跨網域讀資源
+    CORSMiddleware,
+    allow_origins=["https://depot-line.dx-q.net", "http://127.0.0.1:8000"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ---- 全域物件初始化 ----
 depot = AsyncDepot()
@@ -186,6 +193,15 @@ async def stock_submit(stock_data: list[dict]):
     }
 
 
+@app.post("/menu_post")
+async def menu_post(menu_data: dict):
+    try:
+        await menu_do_depot(menu_data)
+        return {"status": "success"}
+    except Exception as err:
+        return {"status": "failure", "msg": err}
+
+
 # ---- WebSocket: 瀏覽器客戶端 ----
 @app.websocket("/ws/client")
 async def ws_client(websocket: WebSocket):
@@ -213,16 +229,16 @@ async def ws_esp32(websocket: WebSocket):
             raw = await websocket.receive_text()
             # 廣播接收到的原始資料給瀏覽器客戶端
             await manager.broadcast(raw)
-            # 處理並寫入出貨資料
-            data = json.loads(raw)
-            await do_depot(data)
+            # 處理並寫入出貨資料 （暫時移除，貨物功能移至menu）
+            # data = json.loads(raw)
+            # await esp_do_depot(data)
     except WebSocketDisconnect:
         manager.esp_connected = False
         # ESP32 斷線時，通知所有瀏覽器客戶端
         await manager.broadcast_json({"type": "status", "esp": False})
 
 
-async def do_depot(data: dict):
+async def esp_do_depot(data: dict):
     """處理 ESP32 傳來的出貨資料，並寫入 Depot"""
     if (not data) or (not data.get("final", False)):
         return
@@ -236,6 +252,15 @@ async def do_depot(data: dict):
         # print("[Depot]-info: write_down")
     except DepotError as err:
         print(f"[Depot]-error: {err}")
+
+
+async def menu_do_depot(data: dict):
+    """處理 Menu 傳來的出貨資料，並寫入 Depot"""
+    for i in data["items"]:
+        try:
+            await depot.write(DepotItem("out", i["material"], i["quantity"]), "menu")
+        except DepotError as err:
+            print(f"[Depot]-error: {err}")
 
 
 # ---- 自訂 404 錯誤處理 ----
