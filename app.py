@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_sock import Sock
+from flask_cors import CORS
 from depot import Depot, DepotItem, DepotError
 import threading
 import requests
@@ -15,6 +16,14 @@ clients = set()  # websocket-瀏覽器 列隊
 clients_lock = threading.Lock()  # websocket-瀏覽器 鎖
 esp_connected = False  # websocket-esp 列隊
 esp_lock = threading.Lock()  # websocket-esp 鎖
+CORS(
+    app,
+    resources={
+        r"/menu_post": {
+            "origins": ["https://depot-line.dx-q.net", "http://127.0.0.1:8000"]
+        }
+    },
+)  # 允許跨網域讀資源
 
 
 def readme_to_html() -> str:
@@ -140,7 +149,12 @@ def stock_submit():
 
 @app.route("/menu_post", methods=["POST"])
 def menu_data():
-    return jsonify()
+    try:
+        data = request.get_json()
+        menu_do_depot(data)
+        return jsonify({"status": "success"})
+    except Exception as err:
+        return jsonify({"status": "error", "msg": err})
 
 
 @app.route("/esp")
@@ -202,7 +216,7 @@ def ws_esp32(ws):
                     pass
 
         # 處理資料
-        # do_depot(json.loads(raw), "esp")
+        # esp_do_depot(json.loads(raw), "esp")
 
     # ESP32 斷線時，更新狀態並廣播
     with esp_lock:
@@ -216,7 +230,7 @@ def ws_esp32(ws):
                 pass
 
 
-def do_depot(data: dict, source: str):
+def esp_do_depot(data: dict):
     """寫入esp32出貨資料"""
     if (not data) or (not data.get("final", False)):
         return
@@ -227,13 +241,26 @@ def do_depot(data: dict, source: str):
         big = DepotItem("out", "big", data["big"])
         tube = DepotItem("out", "tube", data["tube"])
 
-        depot.write(small, source)
-        depot.write(big, source)
-        depot.write(tube, source)
+        depot.write(small)
+        depot.write(big)
+        depot.write(tube)
         print(f"[Depot]-info: write_down")
     except DepotError as err:
         print(f"[Depot]-error: {err}")
         return jsonify({"status": "error", "message": f"deta_bad: {err}"})
+
+    return jsonify({"status": "success", "message": "deta_ok"})
+
+
+def menu_do_depot(data: dict):
+    """寫入menu出貨資料"""
+    # 處理資料
+    Ldata: list = data["items"]
+    for i in Ldata:
+        try:
+            depot.write(DepotItem("out", i["material"], i["quantity"]), "menu")
+        except DepotError as err:
+            print(f"[Depot]-error: {err}")
 
     return jsonify({"status": "success", "message": "deta_ok"})
 
