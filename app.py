@@ -211,11 +211,9 @@ def ws_esp32(ws):
                 pass
 
 
-def do_depot(jsonfile):
+def do_depot(data: dict):
     """寫入esp32出貨資料"""
-    data = jsonfile
-    final = data.get("final", False)
-    if (not data) or (not final):
+    if (not data) or (not data.get("final", False)):
         return
 
     # 處理資料
