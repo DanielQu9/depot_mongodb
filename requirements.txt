@@ -4,6 +4,7 @@ pymongo
 # web:
 flask
 flask-sock
+flask-cors
 requests
 line-bot-sdk
 python-dotenv
