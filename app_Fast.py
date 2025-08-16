@@ -239,6 +239,7 @@ async def ws_esp32(websocket: WebSocket):
         await manager.broadcast_json({"type": "status", "esp": False})
 
 
+# ---- 功能方法 ----
 async def esp_do_depot(data: dict):
     """處理 ESP32 傳來的出貨資料，並寫入 Depot"""
     if (not data) or (not data.get("final", False)):
