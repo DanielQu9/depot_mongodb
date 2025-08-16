@@ -12,12 +12,13 @@ import json
 
 
 # ---- 初始化配置 ----
+CONFIG = json.load(open("./config/server_config.json", "r", encoding="utf-8"))
 app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
 app.mount("/static", StaticFiles(directory="static"), name="static")  # 掛載靜態資源
 templates = Jinja2Templates(directory="templates")  # 模板目錄
 app.add_middleware(  # 允許跨網域讀資源
     CORSMiddleware,
-    allow_origins=["https://depot-line.dx-q.net", "http://127.0.0.1:8000"],
+    allow_origins=[CONFIG["url"]["line"], CONFIG["url"]["line_local"]],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -140,8 +141,8 @@ async def status_page(request: Request):
 async def status_data(request: Request):
     """檢查各服務是否上線"""
     services = [
-        {"name": "LineBot", "url": "https://depot-line.dx-q.net/status"},
-        {"name": "WEB 服務", "url": "https://depot-web.dx-q.net/home"},
+        {"name": "LineBot", "url": f"{CONFIG["url"]["line"]}/status"},
+        {"name": "WEB 服務", "url": f"{CONFIG["url"]["web"]}/home"},
         {"name": "ESP32", "url": "WebSocket"},  # 請確保ESP32的index在2, 不然下面自己改
     ]
     results = []

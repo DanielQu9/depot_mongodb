@@ -1,0 +1,8 @@
+{
+    "url":{
+        "line": "https://depot-line.dx-q.net",
+        "line_local": "http://127.0.0.1:8000",
+        "web": "https://depot-web.dx-q.net",
+        "web_local": "http://127.0.0.1:5000"
+    }
+}

@@ -9,6 +9,7 @@ import json
 
 
 # ==== 初始化設定 ====
+CONFIG = json.load(open("./config/server_config.json", "r", encoding="utf-8"))
 app = Flask(__name__)
 sock = Sock(app)
 depot = Depot()
@@ -19,9 +20,7 @@ esp_lock = threading.Lock()  # websocket-esp 鎖
 CORS(
     app,
     resources={
-        r"/menu_post": {
-            "origins": ["https://depot-line.dx-q.net", "http://127.0.0.1:8000"]
-        }
+        r"/menu_post": {"origins": [CONFIG["url"]["line"], CONFIG["url"]["line_local"]]}
     },
 )  # 允許跨網域讀資源
 
@@ -95,8 +94,8 @@ def status():
 @app.route("/status/data")
 def status_data():
     services = [
-        {"name": "LineBot", "url": "https://depot-line.dx-q.net/status"},
-        {"name": "WEB 服務", "url": "https://depot-web.dx-q.net/home"},
+        {"name": "LineBot", "url": f"{CONFIG["url"]["line"]}/status"},
+        {"name": "WEB 服務", "url": f"{CONFIG["url"]["web"]}/home"},
         {"name": "ESP32", "url": "WebSocket"},  # 請確保ESP32的index在2, 不然下面自己改
     ]
     results = []
