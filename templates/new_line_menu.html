@@ -265,19 +265,58 @@
         this.apiConfig = {
           sendUrl: "http://127.0.0.1:5000/api/send-command",
           xarmUrl: "http://127.0.0.1:5000/api/xarm-command",
-          serverUrl: "https://depot-web.dx-q.net/menu_post",
-          // serverUrl: "http://127.0.0.1:5000/menu_post",
+          serverUrl: "https://127.0.0.1:5000/menu_post",
           timeout: 10000
         };
-        this.isProcessing = false; // 防止重複提交
+        this.isProcessing = false;
+        this.configLoaded = false;
 
         this.init();
       }
 
-      init() {
-        this.generateSelectOptions();
-        this.bindEvents();
-        this.updateSummary();
+      async init() {
+        try {
+          // 先載入設定檔
+          await this.loadConfig();
+          this.generateSelectOptions();
+          this.bindEvents();
+          this.updateSummary();
+          console.log('MaterialSelector 初始化完成，設定已載入');
+        } catch (error) {
+          console.error('初始化時發生錯誤:', error);
+          // 如果設定檔載入失敗，使用預設設定繼續執行
+          this.generateSelectOptions();
+          this.bindEvents();
+          this.updateSummary();
+          this.showToast("⚠️ 設定檔載入失敗，使用預設設定", "warning");
+        }
+      }
+
+      async loadConfig() {
+        try {
+          // 從相對路徑載入設定檔
+          const response = await fetch('../config/menu_config.json');
+          
+          if (!response.ok) {
+            throw new Error(`無法載入設定檔: ${response.status} ${response.statusText}`);
+          }
+
+          const config = await response.json();
+          
+          // 更新 API 設定
+          if (config.url) {
+            this.apiConfig.sendUrl = config.url.sc || this.apiConfig.sendUrl;
+            this.apiConfig.xarmUrl = config.url.xc || this.apiConfig.xarmUrl;
+            this.apiConfig.serverUrl = config.url.server || this.apiConfig.serverUrl;
+          }
+
+          this.configLoaded = true;
+          console.log('設定檔載入成功:', this.apiConfig);
+          
+        } catch (error) {
+          console.error('載入設定檔時發生錯誤:', error);
+          throw error;
+        }
       }
 
       generateSelectOptions() {
