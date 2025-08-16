@@ -10,6 +10,11 @@
 配置env及隧道 使用 <code>python start_dns.py</code> 執行   
 LineBot開機 使用 <code>python line.py</code> 執行  
   
+## 配置  
+到 ./config 進行相關配置  
+server_config: 伺服器端配置  
+menu_config: 前端配置  
+
 ## .env 配置範例:  
 ```
 LINE_CHANNEL_SECRET=""
