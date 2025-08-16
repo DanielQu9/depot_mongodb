@@ -1,4 +1,4 @@
-from flask import Flask, request, abort, Response, render_template
+from flask import Flask, request, abort, Response, render_template, jsonify
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import (
@@ -49,6 +49,12 @@ def line_web_menu():
     if request.args.get("new") == "1":
         return render_template("new_line_menu.html")
     return render_template("line_web_menu.html")
+
+
+@app.route("/config")
+def get_config():
+    config = json.load(open("./config/menu_config.json", "r", encoding="utf-8"))
+    return jsonify(config)
 
 
 @handler.add(MessageEvent, message=TextMessage)

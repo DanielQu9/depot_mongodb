@@ -78,7 +78,7 @@
 
         async function loadConfig() {
             try {
-                const response = await fetch("../config/menu_config.json");
+                const response = await fetch("/config");
                 if (!response.ok) throw new Error("無法載入配置文件");
                 config = await response.json();
             } catch (error) {

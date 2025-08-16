@@ -295,7 +295,7 @@
       async loadConfig() {
         try {
           // 從相對路徑載入設定檔
-          const response = await fetch('../config/menu_config.json');
+          const response = await fetch('/config');
           
           if (!response.ok) {
             throw new Error(`無法載入設定檔: ${response.status} ${response.statusText}`);
