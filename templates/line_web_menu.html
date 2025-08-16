@@ -74,6 +74,115 @@
 
     <script>
         let currentOrder = [];
+        let config = {};
+
+        async function loadConfig() {
+            try {
+                const response = await fetch("../config/menu_config.json");
+                if (!response.ok) throw new Error("無法載入配置文件");
+                config = await response.json();
+            } catch (error) {
+                alert("❌ 配置文件載入失敗：" + error.message);
+            }
+        }
+
+        async function sendToServer() {
+            if (!config.url || !config.url.server) {
+                alert("❌ 配置文件未正確載入");
+                return;
+            }
+
+            const SERVER_URL = config.url.server;
+
+            if (currentOrder.length === 0) {
+                alert("請先選擇物料");
+                return;
+            }
+
+            try {
+                const response = await fetch(SERVER_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ items: currentOrder })
+                });
+
+                if (!response.ok) throw new Error("伺服器回應失敗");
+                const data = await response.json();
+                console.log("伺服器已收到貨物資訊", data);
+                alert("✅ Server資訊傳送成功");
+            } catch (error) {
+                alert("❌ Server資訊傳送失敗：" + error.message);
+            }
+        }
+
+        async function sendToESP32() {
+            if (!config.url || !config.url.sc || !config.url.xc) {
+                alert("❌ 配置文件未正確載入");
+                return;
+            }
+
+            const SEND_URL = config.url.sc;
+            const XARM_URL = config.url.xc;
+
+            if (currentOrder.length === 0) {
+                alert("請先選擇物料");
+                return;
+            }
+
+            // 先送貨物資訊到伺服器
+            await sendToServer();
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+            let timeoutId2;
+
+            try {
+                // 先送給自走車
+                const res1 = await fetch(SEND_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ items: currentOrder }),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+                if (!res1.ok) throw new Error("自走車發送失敗");
+
+                const controller2 = new AbortController();
+                timeoutId2 = setTimeout(() => controller2.abort(), 5000);
+
+                // 再送給機械臂
+                const res2 = await fetch(XARM_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ items: currentOrder }),
+                    signal: controller2.signal
+                });
+
+                clearTimeout(timeoutId2);
+                if (!res2.ok) throw new Error("機械臂發送失敗");
+                alert("✅ 指令已成功送出至自走車與機械臂！");
+            } catch (error) {
+                alert("❌ ESP32發送失敗：" + error.message);
+            }
+        }
+
+        function resetOrder() {
+            ["小螺母", "大螺母", "鐵管", "塑膠管"].forEach(id => {
+                document.getElementById(id).value = 0;
+            });
+            currentOrder = [];
+            document.getElementById("orderSummary").innerHTML = "";
+        }
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            await loadConfig();
+
+            ["小螺母", "大螺母", "鐵管", "塑膠管"].forEach(id => {
+                document.getElementById(id).innerHTML = generateOptions();
+            });
+        });
 
         function generateOptions() {
             let html = "";
@@ -82,10 +191,6 @@
             }
             return html;
         }
-
-        ["小螺母", "大螺母", "鐵管", "塑膠管"].forEach(id => {
-            document.getElementById(id).innerHTML = generateOptions();
-        });
 
         function confirmSelection() {
             const selections = ["小螺母", "大螺母", "鐵管", "塑膠管"];
@@ -109,91 +214,6 @@
                 li.textContent = `${item.material}：${item.quantity} 個`;
                 summary.appendChild(li);
             });
-        }
-
-        function sendToServer() {
-            const SERVER_URL = "https://depot-web.dx-q.net/menu_post";
-            if (currentOrder.length === 0) {
-                alert("請先選擇物料");
-                return;
-            }
-
-            fetch(SERVER_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ items: currentOrder })
-            })
-            .then(res => {
-                if (!res.ok) throw new Error("伺服器回應失敗");
-                return res.json();
-            })
-            .then(data => {
-                // 可根據需要處理伺服器回應
-                console.log("伺服器已收到貨物資訊", data);
-                alert("✅ Server資訊傳送成功");
-            })
-            .catch(err => {
-                alert("❌ Server資訊傳送失敗：" + err.message);
-            });
-        }
-
-        function sendToESP32() {
-            const SEND_URL = "http://127.0.0.1:5000/api/send-command";
-            const XARM_URL = "http://127.0.0.1:5000/api/xarm-command";
-
-            if (currentOrder.length === 0) {
-                alert("請先選擇物料");
-                return;
-            }
-
-            // 先送貨物資訊到伺服器
-            sendToServer();
-
-            // 建立 AbortController
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-            let timeoutId2;
-
-            // 先送給自走車
-            fetch(SEND_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ items: currentOrder }),
-                signal: controller.signal
-            })
-                .then(res1 => {
-                    clearTimeout(timeoutId);
-                    if (!res1.ok) throw new Error("自走車發送失敗");
-
-                    const controller2 = new AbortController();
-                    timeoutId2 = setTimeout(() => controller2.abort(), 5000);
-
-                    // 再送給機械臂
-                    return fetch(XARM_URL, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ items: currentOrder }),
-                        signal: controller2.signal
-                    });
-                })
-                .then(res2 => {
-                    clearTimeout(timeoutId2);
-                    if (!res2.ok) throw new Error("機械臂發送失敗");
-                    alert("✅ 指令已成功送出至自走車與機械臂！");
-                })
-                .catch(err => {
-                    alert("❌ ESP32發送失敗：" + err.message);
-                });
-        }
-
-
-        function resetOrder() {
-            ["小螺母", "大螺母", "鐵管", "塑膠管"].forEach(id => {
-                document.getElementById(id).value = 0;
-            });
-            currentOrder = [];
-            document.getElementById("orderSummary").innerHTML = "";
         }
     </script>
 </body>
