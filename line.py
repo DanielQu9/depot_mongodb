@@ -15,10 +15,12 @@ from linebot.models import (
 )
 from dotenv import dotenv_values
 from depot import Depot
+import json
 
 
 app = Flask(__name__)
 
+CONFIG = json.load(open("./config/server_config.json", "r", encoding="utf-8"))
 env = dotenv_values()
 line_bot_api = LineBotApi(env["LINE_CHANNEL_ACCESS_TOKEN"])
 handler = WebhookHandler(env["LINE_CHANNEL_SECRET"])
@@ -81,20 +83,20 @@ def handle_message(event):
                 ),
                 ButtonComponent(
                     style="secondary",
-                    action=URIAction(label="後台網站", uri="http://depot-web.dx-q.net"),
+                    action=URIAction(label="後台網站", uri=CONFIG["url"]["web"]),
                 ),
                 ButtonComponent(
                     style="primary",
                     action=URIAction(
                         label="前台網站",
-                        uri="https://depot-line.dx-q.net/line_web_menu",
+                        uri=f"{CONFIG["url"]["line"]}/line_web_menu",
                     ),
                 ),
                 ButtonComponent(
                     style="secondary",
                     action=URIAction(
                         label="[TEST]新版前台網站",
-                        uri="https://depot-line.dx-q.net/line_web_menu?new=1",
+                        uri=f"{CONFIG["url"]["line"]}/line_web_menu?new=1",
                     ),
                 ),
                 # ButtonComponent(
