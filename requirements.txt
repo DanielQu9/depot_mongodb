@@ -8,7 +8,7 @@ flask-cors
 requests
 line-bot-sdk
 python-dotenv
-makedown
+Markdown
 
 # web_fastapi:
 fastapi
