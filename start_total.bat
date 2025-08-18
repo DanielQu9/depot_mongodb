@@ -15,4 +15,3 @@ REM 在新視窗中執行第三個Python檔案
 start "Python App 3" cmd /k "cd /d "%~dp0" && python start_dns.py"
 
 echo All Python applications started.
-pause
