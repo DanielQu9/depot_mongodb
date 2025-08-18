@@ -10,6 +10,7 @@ class WarehouseGUI:
         self.root.title("倉儲管理系統")
         self.root.geometry("700x400")
         self.depot = Depot()
+        self.depot.remove_on_zero = True
 
         # === 主視窗：顯示倉庫剩餘量的區塊 ===
         main_frame = ttk.Frame(self.root, padding=10)
