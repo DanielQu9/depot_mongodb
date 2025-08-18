@@ -1,4 +1,13 @@
-from flask import Flask, request, abort, Response, render_template, jsonify
+from flask import (
+    Flask,
+    request,
+    abort,
+    Response,
+    render_template,
+    jsonify,
+    redirect,
+    url_for,
+)
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import (
@@ -26,6 +35,11 @@ env = dotenv_values()
 line_bot_api = LineBotApi(env["LINE_CHANNEL_ACCESS_TOKEN"])
 handler = WebhookHandler(env["LINE_CHANNEL_SECRET"])
 depot = Depot()
+
+
+@app.route("/")
+def index():
+    return redirect(url_for("line_web_menu"))
 
 
 @app.route("/callback", methods=["POST"])
