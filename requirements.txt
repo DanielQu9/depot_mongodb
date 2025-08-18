@@ -12,5 +12,5 @@ Markdown
 
 # web_fastapi:
 fastapi
-"uvicorn[standard]"
+uvicorn[standard]
 httpx

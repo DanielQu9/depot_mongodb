@@ -15,6 +15,7 @@ from linebot.models import (
 )
 from dotenv import dotenv_values
 from depot import Depot
+import requests
 import json
 
 
@@ -55,6 +56,76 @@ def line_web_menu():
 def get_config():
     config = json.load(open("./config/menu_config.json", "r", encoding="utf-8"))
     return jsonify(config)
+
+
+@app.route("/sc", methods=["POST"])
+def sc_do():
+    try:
+        # 接收來自前端的資料
+        data = request.get_json()
+
+        # 轉發到 sc
+        response = requests.post(CONFIG["url"]["sc"], json=data, timeout=10)
+
+        # 回傳結果給前端
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "message": "SC request forwarded successfully",
+                    "response_status": response.status_code,
+                }
+            ),
+            response.status_code,
+        )
+
+    except requests.exceptions.RequestException as e:
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": f"Failed to forward SC request: {str(e)}",
+                }
+            ),
+            500,
+        )
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"Internal error: {str(e)}"}), 500
+
+
+@app.route("/xc", methods=["POST"])
+def xc_do():
+    try:
+        # 接收來自前端的資料
+        data = request.get_json()
+
+        # 轉發到 xc
+        response = requests.post(CONFIG["url"]["xc"], json=data, timeout=10)
+
+        # 回傳結果給前端
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "message": "XC request forwarded successfully",
+                    "response_status": response.status_code,
+                }
+            ),
+            response.status_code,
+        )
+
+    except requests.exceptions.RequestException as e:
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": f"Failed to forward XC request: {str(e)}",
+                }
+            ),
+            500,
+        )
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"Internal error: {str(e)}"}), 500
 
 
 @handler.add(MessageEvent, message=TextMessage)
