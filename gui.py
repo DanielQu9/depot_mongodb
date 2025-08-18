@@ -286,7 +286,7 @@ class WarehouseGUI:
 
             # 根據入/出庫呼叫您的套件
             try:
-                self.depot.write(item=item)
+                self.depot.write(DItem=item)
             except DepotError as e:
                 messagebox.showwarning("輸入錯誤", e.message)
 
