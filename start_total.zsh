@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/zsh
 echo "Starting Python applications..."
 
 # 設定工作目錄為腳本所在目錄
