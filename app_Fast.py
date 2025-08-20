@@ -7,8 +7,10 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from depot import AsyncDepot, DepotItem, DepotError
 import markdown
+import asyncio
 import httpx
 import json
+import time
 
 
 # ---- 初始化配置 ----
@@ -25,6 +27,9 @@ app.add_middleware(  # 允許跨網域讀資源
 
 # ---- 全域物件初始化 ----
 depot = AsyncDepot()
+status_cache: list | None = None  # status狀態快取
+status_cache_lock = asyncio.Lock()
+status_last_time = time.time()  # status頁狀態-最後刷新時間
 
 
 class ConnectionManager:
@@ -140,27 +145,43 @@ async def status_page(request: Request):
 @app.get("/status/data")
 async def status_data(request: Request):
     """檢查各服務是否上線"""
+    global status_last_time, status_cache
     services = [
         {"name": "LineBot", "url": f"{CONFIG["url"]["line"]}/status"},
         {"name": "WEB 服務", "url": f"{CONFIG["url"]["web"]}/home"},
         {"name": "ESP32", "url": "WebSocket"},  # 請確保ESP32的index在2, 不然下面自己改
     ]
     results = []
+    current_time = time.time()
 
-    async with httpx.AsyncClient(timeout=3.0) as client:
-        for svc in services:
-            try:
-                resp = await client.get(svc["url"])
-                online = resp.status_code < 400
-            except:
-                online = False
-            results.append({"name": svc["name"], "url": svc["url"], "online": online})
+    # 如果快取存在且未過期，直接返回快取結果
+    if (status_cache is not None) and (status_last_time + 10 > current_time):
+        return JSONResponse(content={"results": status_cache})
 
-        # 檢查ESP32是否上線:
-        if manager.esp_connected:
-            results[2]["online"] = True
+    async with status_cache_lock:
+        # 雙重檢查，等鎖時防重複發送
+        if (status_cache is not None) and (status_last_time + 10 > current_time):
+            return JSONResponse(content={"results": status_cache})
 
-    return JSONResponse(content={"results": results})
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            for svc in services:
+                try:
+                    resp = await client.get(svc["url"])
+                    online = resp.status_code < 400
+                except:
+                    online = False
+                results.append(
+                    {"name": svc["name"], "url": svc["url"], "online": online}
+                )
+
+            # 檢查ESP32是否上線:
+            if manager.esp_connected:
+                results[2]["online"] = True
+
+            status_last_time = current_time
+            status_cache = results
+
+            return JSONResponse(content={"results": results})
 
 
 @app.get("/stock/input", response_class=HTMLResponse)
