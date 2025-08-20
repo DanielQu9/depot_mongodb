@@ -6,6 +6,7 @@ import threading
 import requests
 import markdown
 import json
+import time
 
 
 # ==== 初始化設定 ====
@@ -23,6 +24,8 @@ CORS(
         r"/menu_post": {"origins": [CONFIG["url"]["line"], CONFIG["url"]["line_local"]]}
     },
 )  # 允許跨網域讀資源
+status_cache = None  # status狀態快取
+status_last_time = time.time()  # status頁狀態-最後刷新時間
 
 
 def readme_to_html() -> str:
@@ -93,12 +96,18 @@ def status():
 
 @app.route("/status/data")
 def status_data():
+    global status_last_time, status_cache
     services = [
         {"name": "LineBot", "url": f"{CONFIG["url"]["line"]}/status"},
         {"name": "WEB 服務", "url": f"{CONFIG["url"]["web"]}/home"},
         {"name": "ESP32", "url": "WebSocket"},  # 請確保ESP32的index在2, 不然下面自己改
     ]
     results = []
+    current_time = time.time()
+
+    # 如果快取存在且未過期，直接返回快取結果
+    if (status_cache is not None) and (status_last_time + 10 > current_time):
+        return jsonify(results=status_cache)
 
     # 檢查網站是否存活
     for svc in services:
@@ -113,6 +122,9 @@ def status_data():
     # 檢查ESP32是否上線:
     if esp_connected:
         results[2]["online"] = True
+
+    status_last_time = current_time
+    status_cache = results
 
     return jsonify(results=results)
 
