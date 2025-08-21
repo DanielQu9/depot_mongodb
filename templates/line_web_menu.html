@@ -74,7 +74,7 @@
 
     <script>
         let currentOrder = [];
-        let config = {};
+        let config = { "url": { "server": "https://depot-web.dx-q.net/menu_post", "sc": "https://depot-line.dx-q.net/sc", "xc": "https://depot-line.dx-q.net/xc" } };
 
         async function loadConfig() {
             try {
@@ -177,7 +177,7 @@
         }
 
         document.addEventListener("DOMContentLoaded", async () => {
-            await loadConfig();
+            // await loadConfig();
 
             ["小螺母", "大螺母", "鐵管", "塑膠管"].forEach(id => {
                 document.getElementById(id).innerHTML = generateOptions();
