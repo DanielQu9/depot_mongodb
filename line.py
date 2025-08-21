@@ -66,12 +66,6 @@ def line_web_menu():
     return render_template("line_web_menu.html")
 
 
-@app.route("/config")
-def get_config():
-    config = json.load(open("./config/menu_config.json", "r", encoding="utf-8"))
-    return jsonify(config)
-
-
 @app.route("/sc", methods=["POST"])
 def sc_do():
     try:
