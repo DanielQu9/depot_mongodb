@@ -208,10 +208,10 @@ async def stock_submit(stock_data: list[dict]):
         except Exception as err:
             fail_data.append(str(err))
     if not fail_data:
-        return {"status": "success", "count": len(stock_data)}
+        return {"status": "success", "message": f"共{len(stock_data)}筆資料已成功處理"}
     return {
-        "status": "failure",
-        "msg": f"共{len(fail_data)}筆資料均已忽略，原因:\n{''.join(fail_data)}",
+        "status": "error",
+        "message": f"共{len(fail_data)}筆資料均已忽略，原因:\n{''.join(fail_data)}",
     }
 
 
@@ -219,9 +219,9 @@ async def stock_submit(stock_data: list[dict]):
 async def menu_post(menu_data: dict):
     try:
         await menu_do_depot(menu_data)
-        return {"status": "success"}
+        return {"status": "success", "message": "資料已成功寫入"}
     except Exception as err:
-        return {"status": "failure", "msg": err}
+        return {"status": "error", "message": str(err)}
 
 
 # ---- WebSocket: 瀏覽器客戶端 ----

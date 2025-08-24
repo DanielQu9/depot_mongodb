@@ -120,9 +120,9 @@
 
       const result = await res.json();
       if (result.status === "success") {
-        alert(`成功送出 ${result.count} 筆紀錄！`);
+        alert(`成功送出！, ${result.message} `);
       } else {
-        alert(`送出失敗！, ${result.msg}`);
+        alert(`送出失敗！, ${result.message}`);
       }
       tempData.length = 0;
       renderTable();

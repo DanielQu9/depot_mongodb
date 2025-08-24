@@ -152,12 +152,12 @@ def stock_submit():
         except Exception as err:
             fail_data.append(err)
 
-    if fail_data == []:
-        return {"status": "success", "count": len(data)}
+    if not fail_data:
+        return {"status": "success", "message": f"共{len(data)}筆資料已成功處理"}
     else:
         return {
-            "status": "failure",
-            "msg": f"共{len(fail_data)}均已忽略, 原因:\n {''.join(f'{i}\n' for i in fail_data)}",
+            "status": "error",
+            "message": f"共{len(fail_data)}筆資料失敗, 原因:\n{''.join(f'{i}\n' for i in fail_data)}",
         }
 
 
@@ -166,9 +166,9 @@ def menu_data():
     try:
         data = request.get_json()
         menu_do_depot(data)
-        return jsonify({"status": "success"})
+        return jsonify({"status": "success", "message": "資料已成功寫入"})
     except Exception as err:
-        return jsonify({"status": "error", "msg": err})
+        return jsonify({"status": "error", "message": str(err)})
 
 
 @app.route("/esp")
@@ -261,9 +261,9 @@ def esp_do_depot(data: dict):
         print(f"[Depot]-info: write_down")
     except DepotError as err:
         print(f"[Depot]-error: {err}")
-        return jsonify({"status": "error", "message": f"deta_bad: {err}"})
+        return jsonify({"status": "error", "message": f"data_bad: {err}"})
 
-    return jsonify({"status": "success", "message": "deta_ok"})
+    return jsonify({"status": "success", "message": "data_ok"})
 
 
 def menu_do_depot(data: dict):
@@ -276,7 +276,7 @@ def menu_do_depot(data: dict):
         except DepotError as err:
             print(f"[Depot]-error: {err}")
 
-    return jsonify({"status": "success", "message": "deta_ok"})
+    return jsonify({"status": "success", "message": "data_ok"})
 
 
 @app.route("/api/data")
