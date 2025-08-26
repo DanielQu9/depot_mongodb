@@ -73,7 +73,7 @@ def sc_do():
         data = request.get_json()
 
         # 轉發到 sc
-        response = requests.post(CONFIG["url"]["sc"], json=data, timeout=10)
+        response = requests.post(CONFIG["url"]["sc"], json=data, timeout=30)
 
         # 回傳結果給前端
         return (
@@ -108,7 +108,7 @@ def xc_do():
         data = request.get_json()
 
         # 轉發到 xc
-        response = requests.post(CONFIG["url"]["xc"], json=data, timeout=10)
+        response = requests.post(CONFIG["url"]["xc"], json=data, timeout=30)
 
         # 回傳結果給前端
         return (
@@ -209,4 +209,4 @@ def get_depot_inventory():
 
 
 if __name__ == "__main__":
-    app.run(port=8000)
+    app.run(port=8000, debug=True)

@@ -133,7 +133,7 @@
             await sendToServer();
 
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
 
             let timeoutId2;
 
@@ -150,7 +150,7 @@
                 if (!res1.ok) throw new Error("自走車發送失敗");
 
                 const controller2 = new AbortController();
-                timeoutId2 = setTimeout(() => controller2.abort(), 5000);
+                timeoutId2 = setTimeout(() => controller2.abort(), 30000);
 
                 // 再送給機械臂
                 const res2 = await fetch(XARM_URL, {
