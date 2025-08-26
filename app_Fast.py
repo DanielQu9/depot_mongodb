@@ -266,9 +266,9 @@ async def esp_do_depot(data: dict):
     if (not data) or (not data.get("final", False)):
         return
     try:
-        small = DepotItem("out", "small", data.get("small", 0))
-        big = DepotItem("out", "big", data.get("big", 0))
-        tube = DepotItem("out", "tube", data.get("tube", 0))
+        small = DepotItem("out", "小螺母", data.get("small", 0))
+        big = DepotItem("out", "大螺母", data.get("big", 0))
+        tube = DepotItem("out", "鐵管", data.get("tube", 0))
         await depot.write(small, source="esp")
         await depot.write(big, source="esp")
         await depot.write(tube, source="esp")

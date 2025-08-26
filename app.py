@@ -251,9 +251,9 @@ def esp_do_depot(data: dict):
 
     # 處理資料
     try:
-        small = DepotItem("out", "small", data["small"])
-        big = DepotItem("out", "big", data["big"])
-        tube = DepotItem("out", "tube", data["tube"])
+        small = DepotItem("out", "小螺母", data["small"])
+        big = DepotItem("out", "大螺母", data["big"])
+        tube = DepotItem("out", "鐵管", data["tube"])
 
         depot.write(small)
         depot.write(big)

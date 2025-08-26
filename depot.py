@@ -236,7 +236,7 @@ class Depot:
 
     def __init_default_items(self):
         """配合esp, 給資料庫插入三組預設物品"""
-        lst = ["small", "big", "tube", "小螺母", "大螺母", "鐵管", "塑膠管"]
+        lst = ["小螺母", "大螺母", "鐵管", "塑膠管"]
         for item in lst:
             self.inventory.update_one(
                 {"item": item},
