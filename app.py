@@ -9,7 +9,7 @@ import json
 import time
 
 
-# ==== 初始化設定 ====
+# ---- 初始化設定 ----
 CONFIG = json.load(open("./config/server_config.json", "r", encoding="utf-8"))
 app = Flask(__name__)
 sock = Sock(app)
