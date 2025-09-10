@@ -416,6 +416,3 @@ class AsyncDepot:
 
 if __name__ == "__main__":
     depot = Depot()
-
-    # 621更新: 補上tag欄位
-    depot.inventory.update_many({"tag": {"$exists": False}}, {"$set": {"tag": {}}})
