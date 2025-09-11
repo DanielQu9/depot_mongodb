@@ -1,6 +1,7 @@
 from datetime import datetime, date
 from typing import Literal, Any, Iterator
 from pymongo import MongoClient, AsyncMongoClient
+import json
 
 
 class DepotItem:
@@ -236,19 +237,22 @@ class Depot:
 
     def __init_default_items(self):
         """配合esp, 給資料庫插入三組預設物品"""
-        lst = ["小螺母", "大螺母", "鐵管", "塑膠管"]
-        for item in lst:
+        j = json.load(open("./config/item_id.json"))
+        lst = [j[i]["name"] for i in range(len(j))]
+        for i in range(len(lst)):
             self.inventory.update_one(
-                {"item": item},
+                {"item": j[i]["name"]},
                 {
                     "$setOnInsert": {
                         "amount": 0,
+                    },
+                    "$set": {
                         "tag": {
-                            "no_auto_remove": True,
-                            "unit_weight": 1,
-                            "min_weight_warning": 1,
-                        },
-                    }
+                            "no_auto_remove": j[i]["tag"]["no_auto_remove"],
+                            "unit_weight": j[i]["unit_weight"],
+                            "min_weight_warning": j[i]["min_weight_warning"],
+                        }
+                    },
                 },
                 upsert=True,
             )
