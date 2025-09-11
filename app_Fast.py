@@ -15,6 +15,7 @@ import time
 
 # ---- 初始化配置 ----
 CONFIG = json.load(open("./config/server_config.json", "r", encoding="utf-8"))
+ITEM_ID = json.load(open("./config/item_id.json", "r", encoding="utf-8"))
 app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
 app.mount("/static", StaticFiles(directory="static"), name="static")  # 掛載靜態資源
 templates = Jinja2Templates(directory="templates")  # 模板目錄
@@ -251,9 +252,9 @@ async def ws_esp32(websocket: WebSocket):
             raw = await websocket.receive_text()
             # 廣播接收到的原始資料給瀏覽器客戶端
             await manager.broadcast(raw)
-            # 處理並寫入出貨資料 （暫時移除，貨物功能移至menu）
-            # data = json.loads(raw)
-            # await esp_do_depot(data)
+            # 處理並寫入出貨資料
+            data = json.loads(raw)
+            await esp_do_depot(data)
     except WebSocketDisconnect:
         manager.esp_connected = False
         # ESP32 斷線時，通知所有瀏覽器客戶端
@@ -266,12 +267,8 @@ async def esp_do_depot(data: dict):
     if (not data) or (not data.get("final", False)):
         return
     try:
-        small = DepotItem("out", "小螺母", data.get("small", 0))
-        big = DepotItem("out", "大螺母", data.get("big", 0))
-        tube = DepotItem("out", "鐵管", data.get("tube", 0))
-        await depot.write(small, source="esp")
-        await depot.write(big, source="esp")
-        await depot.write(tube, source="esp")
+        for i in data:
+            await depot.write(DepotItem("set", i, data[i]), "esp")
         # print("[Depot]-info: write_down")
     except DepotError as err:
         print(f"[Depot]-error: {err}")
