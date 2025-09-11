@@ -243,15 +243,16 @@ class Depot:
             self.inventory.update_one(
                 {"item": j[i]["name"]},
                 {
-                    "$setOnInsert": {
-                        "amount": 0,
-                    },
+                    # "$setOnInsert": {
+                    #     "amount": 0,
+                    # },
                     "$set": {
+                        "amount": 0,
                         "tag": {
                             "no_auto_remove": j[i]["tag"]["no_auto_remove"],
                             "unit_weight": j[i]["unit_weight"],
                             "min_weight_warning": j[i]["min_weight_warning"],
-                        }
+                        },
                     },
                 },
                 upsert=True,
