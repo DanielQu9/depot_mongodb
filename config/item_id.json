@@ -1,13 +1,38 @@
 [
     {
         "id": 0,
-        "name": "",
-        "setting": {}
+        "name": "小螺母",
+        "setting": {
+            "no_auto_remove": true,
+            "unit_weight": 1,
+            "min_weight_warning": 10
+        }
     },
-
     {
         "id": 1,
-        "name": "",
-        "setting": {}
+        "name": "大螺母",
+        "setting": {
+            "no_auto_remove": true,
+            "unit_weight": 1,
+            "min_weight_warning": 10
+        }
+    },
+    {
+        "id": 2,
+        "name": "塑膠管",
+        "setting": {
+            "no_auto_remove": true,
+            "unit_weight": 1,
+            "min_weight_warning": 10
+        }
+    },
+    {
+        "id": 3,
+        "name": "鐵管",
+        "setting": {
+            "no_auto_remove": true,
+            "unit_weight": 1,
+            "min_weight_warning": 10
+        }
     }
 ]
