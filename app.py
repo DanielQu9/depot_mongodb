@@ -253,15 +253,8 @@ def esp_do_depot(data: dict):
     # 處理資料
     try:
         for i in data:
-            
-        
-        small = DepotItem("out", "小螺母", data["small"])
-        big = DepotItem("out", "大螺母", data["big"])
-        tube = DepotItem("out", "鐵管", data["tube"])
+            depot.write(DepotItem("set", i, data[i]), "esp")
 
-        depot.write(small, "esp")
-        depot.write(big, "esp")
-        depot.write(tube, "esp")
         print(f"[Depot]-info: write_down")
     except DepotError as err:
         print(f"[Depot]-error: {err}")
