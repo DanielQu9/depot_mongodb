@@ -11,7 +11,7 @@ import time
 
 # ---- 初始化設定 ----
 CONFIG = json.load(open("./config/server_config.json", "r", encoding="utf-8"))
-ITEM_ID = json.load(open("./config/item_id.json"))
+ITEM_ID = json.load(open("./config/item_id.json", "r", encoding="utf-8"))
 app = Flask(__name__)
 sock = Sock(app)
 depot = Depot()
@@ -231,7 +231,7 @@ def ws_esp32(ws):
                     pass
 
         # 處理資料
-        # esp_do_depot(json.loads(raw), "esp")
+        esp_do_depot(json.loads(raw))
 
     # ESP32 斷線時，更新狀態並廣播
     with esp_lock:
