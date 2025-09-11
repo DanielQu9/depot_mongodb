@@ -10,31 +10,38 @@ class DepotItem:
     """
 
     def __init__(
-        self, type: Literal["in", "out", "auto"], item: str, amount: int, time=None
+        self,
+        type: Literal["in", "out", "auto", "set"],
+        item: str,
+        amount: int,
+        time=None,
     ) -> None:
         """
-        type: 'in' or 'out' or 'auto'(自動辨識正負數)\n
+        type: 'in' or 'out' or 'auto'(自動辨識正負數) or 'set'(設置數量, 跳過檢查)\n
         item: 商品名稱\n
         amount: 數量（正整數）\n
         time: 時間（可選，預設為現在時間）\n
         """
 
         # 格式驗證
-        if type == "auto":
-            if amount <= 0:
-                type = "out"
-                amount *= -1
-            else:
-                type = "in"
-        elif type not in ("in", "out"):
-            raise DepotError("警告: type 必須是 'in' 或 'out'，已忽略此筆。", "type")
+        if type != "set":
+            if type == "auto":
+                if amount <= 0:
+                    type = "out"
+                    amount *= -1
+                else:
+                    type = "in"
+            elif type not in ("in", "out"):
+                raise DepotError(
+                    "警告: type 必須是 'in' 或 'out' 或 'set'，已忽略此筆。", "type"
+                )
 
-        if not isinstance(amount, int) or amount <= 0:
-            raise DepotError("警告: amount 必須是正整數，已忽略此筆。", "amount")
+            if not isinstance(amount, int) or amount <= 0:
+                raise DepotError("警告: amount 必須是正整數，已忽略此筆。", "amount")
         if time is None:
             time = datetime.now()
 
-        self.type: Literal["in", "out"] = type
+        self.type: Literal["in", "out", "set"] = type
         self.item: str = item
         self.amount: int = amount
         self.time: datetime = time
@@ -125,7 +132,7 @@ class Depot:
 
     def __write_to_db(
         self,
-        type: Literal["in", "out"],
+        type: Literal["in", "out", "set"],
         item: str,
         amount: int,
         time: datetime,
@@ -147,6 +154,8 @@ class Depot:
                 )
             else:
                 new_amount = current_amount - amount
+        elif type == "set":
+            new_amount = amount
 
         # 更新或新增庫存
         self.inventory.update_one(
@@ -308,7 +317,7 @@ class AsyncDepot:
         self.collection = self.db[f"{date.today()}"]
 
         # 解包資料
-        type: Literal["in", "out"] = DItem.type
+        type: Literal["in", "out", "set"] = DItem.type
         item: str = DItem.item
         amount: int = DItem.amount
         time: datetime = DItem.time
@@ -326,6 +335,8 @@ class AsyncDepot:
                 )
             else:
                 new_amount = current_amount - amount
+        elif type == "set":
+            new_amount = amount
 
         # 更新或新增庫存
         await self.inventory.update_one(
