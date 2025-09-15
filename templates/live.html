@@ -40,6 +40,11 @@
       <span id="espText">ESP32 未連線</span>
     </div>
 
+    <!-- 重置按鈕 -->
+    <div class="my-3">
+      <button id="resetBtn" class="btn btn-warning" onclick="resetESP()">🔄 重置數據</button>
+    </div>
+
     <!-- 資料顯示區 -->
     <!-- 總重量 -->
     <div class="row text-center mb-3">
@@ -83,6 +88,40 @@
     const elSmall = document.getElementById("countSmall");
     const elLarge = document.getElementById("countLarge");
     const elTube = document.getElementById("countTube");
+
+    // 重置 ESP32 函數
+    async function resetESP() {
+      const resetBtn = document.getElementById("resetBtn");
+      try {
+        resetBtn.disabled = true;
+        resetBtn.textContent = "重置中...";
+        
+        const response = await fetch('/esp/reset', {
+          method: 'POST'
+        });
+        
+        if (response.ok) {
+          resetBtn.textContent = "重置成功";
+          resetBtn.className = "btn btn-success";
+          setTimeout(() => {
+            resetBtn.disabled = false;
+            resetBtn.textContent = "🔄 重置數據";
+            resetBtn.className = "btn btn-warning";
+          }, 2000);
+        } else {
+          throw new Error('重置失敗');
+        }
+      } catch (error) {
+        console.error('重置錯誤:', error);
+        resetBtn.textContent = "重置失敗";
+        resetBtn.className = "btn btn-danger";
+        setTimeout(() => {
+          resetBtn.disabled = false;
+          resetBtn.textContent = "🔄 重置數據";
+          resetBtn.className = "btn btn-warning";
+        }, 2000);
+      }
+    }
 
     let ws;
     function connect() {
