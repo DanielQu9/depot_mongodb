@@ -18,6 +18,7 @@ depot = Depot()
 clients = set()  # websocket-瀏覽器 列隊
 clients_lock = threading.Lock()  # websocket-瀏覽器 鎖
 esp_connected = False  # websocket-esp 列隊
+esp_ws = None  # websocket-esp 連接實例
 esp_lock = threading.Lock()  # websocket-esp 鎖
 CORS(
     app,
@@ -178,6 +179,37 @@ def esp_live():
     return render_template("live.html")
 
 
+@app.route("/esp/reset", methods=["POST"])
+def live_reset():
+    """重製重量及數量"""
+    global esp_ws
+
+    try:
+        # 檢查 ESP32 是否連線
+        if not esp_connected or esp_ws is None:
+            return (
+                jsonify({"status": "error", "message": "ESP32 未連線，無法執行重置"}),
+                400,
+            )
+
+        # 向 ESP32 發送重置命令
+        reset_command = json.dumps({"command": "reset"})
+        with esp_lock:
+            try:
+                esp_ws.send(reset_command)
+                print("[esp/reset]-info: 已向 ESP32 發送重置命令")
+                return jsonify(
+                    {"status": "success", "message": "重置命令已發送至 ESP32"}
+                )
+            except Exception as e:
+                print(f"[esp/reset]-error: 發送重置命令失敗: {e}")
+                return jsonify({"status": "error", "message": "發送重置命令失敗"}), 500
+
+    except Exception as e:
+        print(f"[esp/reset]-error: {e}")
+        return jsonify({"status": "error", "message": "重置操作失敗"}), 500
+
+
 @sock.route("/ws/client")
 def ws_client(ws):
     """WebSocket協議, 瀏覽器端"""
@@ -204,9 +236,10 @@ def ws_client(ws):
 def ws_esp32(ws):
     """WebSocket協議, esp32端"""
     # ESP32 一旦連上，更新狀態並廣播，再持續接收它送來的 JSON 資料
-    global esp_connected
+    global esp_connected, esp_ws
     with esp_lock:
         esp_connected = True
+        esp_ws = ws  # 保存 ESP32 WebSocket 連接
         print("[ws_esp32]-info: ESP32 已連線")
     # 廣播給所有瀏覽器：ESP32 已連線
     with clients_lock, esp_lock:
@@ -236,6 +269,7 @@ def ws_esp32(ws):
     # ESP32 斷線時，更新狀態並廣播
     with esp_lock:
         esp_connected = False
+        esp_ws = None  # 清除 ESP32 WebSocket 連接
         print("[ws_esp32]-info: ESP32 已斷線")
     with clients_lock, esp_lock:
         for c in list(clients):
@@ -250,10 +284,12 @@ def esp_do_depot(data: dict):
     if (not data) or (not data.get("final", False)):
         return
 
+    as_name = {"small": "小螺母", "big": "大螺母", "tube": "鐵管"}
     # 處理資料
     try:
         for i in data:
-            depot.write(DepotItem("set", i, data[i]), "esp")
+            if i not in ["final", "weight"]:
+                depot.write(DepotItem("set", as_name.get(i, i), data[i]), "esp")  # type: ignore
 
         print(f"[Depot]-info: write_down")
     except DepotError as err:
