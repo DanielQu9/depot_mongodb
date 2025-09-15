@@ -184,9 +184,25 @@ def live_reset():
     """重製重量及數量"""
     global esp_ws
 
+    # 準備重置後的數據
+    reset_data = {"final": True, "weight": 0, "small": 0, "big": 0, "tube": 0}
+    reset_data_json = json.dumps(reset_data)
+
     try:
         # 檢查 ESP32 是否連線
         if not esp_connected or esp_ws is None:
+            # 廣播重置數據給所有瀏覽器
+            with clients_lock:
+                for client in list(clients):
+                    try:
+                        client.send(reset_data_json)
+                    except:
+                        # 跳過已斷線的 client
+                        pass
+
+            # 將重置數據傳遞給 esp_do_depot 處理
+            esp_do_depot(reset_data)
+            print("[esp/reset]-info: 已廣播重置數據並更新庫存")
             return (
                 jsonify({"status": "error", "message": "ESP32 未連線，無法執行重置"}),
                 400,
@@ -194,12 +210,30 @@ def live_reset():
 
         # 向 ESP32 發送重置命令
         reset_command = json.dumps({"command": "reset"})
+
         with esp_lock:
             try:
                 esp_ws.send(reset_command)
                 print("[esp/reset]-info: 已向 ESP32 發送重置命令")
+
+                # 廣播重置數據給所有瀏覽器
+                with clients_lock:
+                    for client in list(clients):
+                        try:
+                            client.send(reset_data_json)
+                        except:
+                            # 跳過已斷線的 client
+                            pass
+
+                # 將重置數據傳遞給 esp_do_depot 處理
+                esp_do_depot(reset_data)
+                print("[esp/reset]-info: 已廣播重置數據並更新庫存")
+
                 return jsonify(
-                    {"status": "success", "message": "重置命令已發送至 ESP32"}
+                    {
+                        "status": "success",
+                        "message": "重置命令已發送至 ESP32，數據已重置",
+                    }
                 )
             except Exception as e:
                 print(f"[esp/reset]-error: 發送重置命令失敗: {e}")
