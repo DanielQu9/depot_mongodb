@@ -246,7 +246,7 @@ class Depot:
 
     def __init_default_items(self):
         """配合esp, 給資料庫插入三組預設物品"""
-        j = json.load(open("./config/item_id.json"))
+        j: dict = json.load(open("./config/item_id.json"))
         lst = [j[i]["name"] for i in range(len(j))]
         for i in range(len(lst)):
             self.inventory.update_one(
@@ -258,9 +258,13 @@ class Depot:
                     "$set": {
                         "amount": 0,
                         "tag": {
-                            "no_auto_remove": j[i]["tag"]["no_auto_remove"],
-                            "unit_weight": j[i]["unit_weight"],
-                            "min_weight_warning": j[i]["min_weight_warning"],
+                            "no_auto_remove": j[i]["setting"].get(
+                                "no_auto_remove", False
+                            ),
+                            "unit_weight": j[i]["setting"].get("unit_weight", 0),
+                            "min_weight_warning": j[i]["setting"].get(
+                                "min_weight_warning", 0
+                            ),
                         },
                     },
                 },
