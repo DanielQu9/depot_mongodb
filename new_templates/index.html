@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <title>物品重量管理</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #2c3e50;
+            min-height: 100vh;
+            display: flex;
+            overflow-x: hidden;
+        }
+
+        .sidebar {
+            width: 320px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 2rem;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            z-index: 100;
+            box-shadow: 2px 0 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar.hidden {
+            transform: translateX(-100%);
+        }
+
+        .sidebar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            z-index: -1;
+        }
+
+        .toggle-btn {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 0.75rem;
+            cursor: pointer;
+            border-radius: 12px;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            font-size: 1.2rem;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: scale(1.1);
+        }
+
+        .sidebar-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .sidebar-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .sidebar-subtitle {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            font-weight: 300;
+        }
+
+        .form-group {
+            margin-bottom: 2rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1rem;
+            border: none;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            color: white;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .form-select:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 255, 255, 0.1);
+        }
+
+        .form-select option {
+            background: #2c3e50;
+            color: white;
+            padding: 0.5rem;
+        }
+
+        .preview-area {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .preview-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.95rem;
+        }
+
+        .preview-item:last-child {
+            border-bottom: none;
+        }
+
+        .preview-item strong {
+            color: white;
+        }
+
+        .preview-item .icon {
+            margin-right: 0.5rem;
+            opacity: 0.7;
+        }
+
+        .main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            padding: 2rem;
+            position: relative;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .main-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .main-title {
+            font-size: 3rem;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 1rem;
+            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .main-subtitle {
+            font-size: 1.25rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 300;
+        }
+
+        .weight-display {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 24px;
+            padding: 3rem;
+            text-align: center;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            min-width: 400px;
+        }
+
+        .weight-display:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
+        }
+
+        .weight-value {
+            font-size: 4rem;
+            font-weight: 900;
+            color: white;
+            margin-bottom: 1rem;
+            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: all 0.5s ease;
+        }
+
+        .weight-value.alert {
+            color: #ff6b6b;
+            animation: pulseAlert 1s infinite;
+        }
+
+        @keyframes pulseAlert {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .weight-label {
+            font-size: 1.25rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+        }
+
+        .status-indicator {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            padding: 0.75rem 1rem;
+            border-radius: 50px;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #48dbfb;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            color: #2c3e50;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+            font-weight: 600;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .loading-state {
+            color: rgba(255, 255, 255, 0.6);
+            font-style: italic;
+        }
+
+        /* 背景裝飾 */
+        .background-shapes {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .shape {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            animation: float 15s infinite linear;
+        }
+
+        .shape:nth-child(1) { width: 60px; height: 60px; left: 10%; animation-delay: 0s; }
+        .shape:nth-child(2) { width: 80px; height: 80px; left: 80%; animation-delay: 5s; }
+        .shape:nth-child(3) { width: 40px; height: 40px; left: 60%; animation-delay: 10s; }
+
+        @keyframes float {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+        }
+
+        /* 動畫效果 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .sidebar {
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .main-header {
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .weight-display {
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        /* 響應式設計 */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: fixed;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                z-index: 1000;
+            }
+            
+            .main {
+                width: 100%;
+                padding: 1rem;
+            }
+            
+            .main-title {
+                font-size: 2rem;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .weight-display {
+                min-width: unset;
+                width: 100%;
+                max-width: 400px;
+                padding: 2rem;
+            }
+            
+            .weight-value {
+                font-size: 2.5rem;
+            }
+            
+            .toggle-btn {
+                left: 1rem;
+                top: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .weight-value {
+                font-size: 2rem;
+            }
+            
+            .main-title {
+                font-size: 1.5rem;
+            }
+            
+            .weight-display {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 背景裝飾 -->
+    <div class="background-shapes">
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+    </div>
+
+    <!-- 側邊欄 -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2 class="sidebar-title">
+                <i class="fas fa-cog"></i>
+                物品設定
+            </h2>
+            <p class="sidebar-subtitle">選擇要監控的物品項目</p>
+        </div>
+
+        <div class="form-group">
+            <label for="itemSelect" class="form-label">
+                <i class="fas fa-cube"></i>
+                選擇物品
+            </label>
+            <select id="itemSelect" class="form-select">
+                <option value="">-- 請選擇物品 --</option>
+                {% for it in items %}
+                <option value="{{ it }}">{{ it }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="preview-area" id="previewArea">
+            <div class="preview-item loading-state">
+                <i class="fas fa-info-circle icon"></i>
+                尚未選擇物品
+            </div>
+        </div>
+    </div>
+
+    <!-- 主要內容區 -->
+    <div class="main">
+        <button class="toggle-btn" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <div class="status-indicator">
+            <span class="status-dot"></span>
+            即時更新中
+        </div>
+
+        <div class="main-header">
+            <h1 class="main-title">
+                <i class="fas fa-weight"></i>
+                物品重量監控
+            </h1>
+            <p class="main-subtitle">即時重量顯示與警示系統</p>
+        </div>
+
+        <div class="weight-display">
+            <div id="weightDisplay" class="weight-value">--</div>
+            <div class="weight-label">等待選擇物品...</div>
+        </div>
+    </div>
+
+    <!-- 通知 Toast -->
+    <div id="toast" class="toast"></div>
+
+    <script>
+        let selectedItem = "";
+        let currentWeight = null;
+        let isUpdating = false;
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.querySelector('.toggle-btn');
+            
+            sidebar.classList.toggle('hidden');
+            
+            // 更新按鈕圖示
+            const icon = toggleBtn.querySelector('i');
+            if (sidebar.classList.contains('hidden')) {
+                icon.className = 'fas fa-bars';
+            } else {
+                icon.className = 'fas fa-times';
+            }
+        }
+
+        document.getElementById('itemSelect').addEventListener('change', () => {
+            selectedItem = document.getElementById('itemSelect').value;
+            updatePreview();
+        });
+
+        async function updatePreview() {
+            const previewArea = document.getElementById('previewArea');
+            const weightDisplay = document.getElementById('weightDisplay');
+            const weightLabel = document.querySelector('.weight-label');
+            
+            if (!selectedItem) {
+                previewArea.innerHTML = `
+                    <div class="preview-item loading-state">
+                        <i class="fas fa-info-circle icon"></i>
+                        尚未選擇物品
+                    </div>
+                `;
+                weightDisplay.textContent = '--';
+                weightLabel.textContent = '等待選擇物品...';
+                currentWeight = null;
+                return;
+            }
+
+            try {
+                // 顯示載入狀態
+                previewArea.innerHTML = `
+                    <div class="preview-item loading-state">
+                        <i class="fas fa-spinner fa-spin icon"></i>
+                        載入中...
+                    </div>
+                `;
+
+                const resp = await fetch(`/api/data?item=${encodeURIComponent(selectedItem)}`);
+                const data = await resp.json();
+                
+                previewArea.innerHTML = `
+                    <div class="preview-item">
+                        <span><i class="fas fa-tag icon"></i>物品名稱</span>
+                        <strong>${data.item}</strong>
+                    </div>
+                    <div class="preview-item">
+                        <span><i class="fas fa-sort-numeric-up icon"></i>目前個數</span>
+                        <strong>${data.count} 個</strong>
+                    </div>
+                    <div class="preview-item">
+                        <span><i class="fas fa-balance-scale icon"></i>單位重量</span>
+                        <strong>${data.unit_weight} g</strong>
+                    </div>
+                    <div class="preview-item">
+                        <span><i class="fas fa-exclamation-triangle icon"></i>警示重量</span>
+                        <strong>${data.min_weight} g</strong>
+                    </div>
+                `;
+                
+                weightLabel.textContent = `${data.item} 總重量`;
+            } catch (error) {
+                console.error('獲取數據錯誤:', error);
+                previewArea.innerHTML = `
+                    <div class="preview-item" style="color: #ff6b6b;">
+                        <i class="fas fa-exclamation-triangle icon"></i>
+                        載入失敗，請重試
+                    </div>
+                `;
+                showToast('載入數據失敗', 'error');
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            
+            // 根據類型設置樣式
+            if (type === 'error') {
+                toast.style.background = 'rgba(255, 107, 107, 0.9)';
+                toast.style.color = 'white';
+            } else {
+                toast.style.background = 'rgba(255, 255, 255, 0.9)';
+                toast.style.color = '#2c3e50';
+            }
+            
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function animateWeightChange(from, to, duration = 800) {
+            const el = document.getElementById('weightDisplay');
+            const steps = 30;
+            let step = 0;
+            const increment = (to - from) / steps;
+            const interval = duration / steps;
+
+            isUpdating = true;
+            
+            const animate = setInterval(() => {
+                const value = from + increment * step;
+                el.textContent = `${value.toFixed(1)} g`;
+                step++;
+                
+                if (step > steps) {
+                    clearInterval(animate);
+                    el.textContent = `${to.toFixed(1)} g`;
+                    isUpdating = false;
+                }
+            }, interval);
+        }
+
+        async function fetchAndUpdateWeight() {
+            if (!selectedItem || isUpdating) return;
+            
+            try {
+                const resp = await fetch(`/api/data?item=${encodeURIComponent(selectedItem)}`);
+                const data = await resp.json();
+                const total = data.count * data.unit_weight;
+                const el = document.getElementById('weightDisplay');
+
+                if (currentWeight !== null && total !== currentWeight) {
+                    animateWeightChange(currentWeight, total);
+                    showToast(`重量更新：${total.toFixed(1)} g`);
+                } else if (currentWeight === null) {
+                    el.textContent = `${total.toFixed(1)} g`;
+                }
+
+                // 檢查警示
+                if (total < data.min_weight) {
+                    el.classList.add('alert');
+                    if (currentWeight !== null && total !== currentWeight) {
+                        showToast(`警告：重量低於警示值 ${data.min_weight} g`, 'error');
+                    }
+                } else {
+                    el.classList.remove('alert');
+                }
+
+                currentWeight = total;
+            } catch (error) {
+                console.error('更新重量錯誤:', error);
+            }
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 定期更新重量
+            setInterval(fetchAndUpdateWeight, 2000);
+            
+            // 點擊外部關閉側邊欄 (僅在手機版)
+            document.addEventListener('click', function(e) {
+                if (window.innerWidth <= 768) {
+                    const sidebar = document.getElementById('sidebar');
+                    const toggleBtn = document.querySelector('.toggle-btn');
+                    
+                    if (!sidebar.contains(e.target) && !toggleBtn.contains(e.target) && !sidebar.classList.contains('hidden')) {
+                        toggleSidebar();
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
