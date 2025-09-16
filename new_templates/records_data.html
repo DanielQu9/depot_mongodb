@@ -175,6 +175,10 @@
       background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
     }
 
+    .type-set {
+      background: linear-gradient(135deg, #54a0ff, #2e86de);
+    }
+
     .item-name {
       font-weight: 600;
       color: #2c3e50;
@@ -354,6 +358,11 @@
           出貨記錄：
           <span class="stat-number">{{ data|selectattr("type", "equalto", "out")|list|length }}</span>
         </div>
+        <div class="stat-item">
+          <i class="fas fa-cogs"></i>
+          設定記錄：
+          <span class="stat-number">{{ data|selectattr("type", "equalto", "set")|list|length }}</span>
+        </div>
       </div>
       
       <!-- 資料表格 -->
@@ -394,9 +403,9 @@
                 <span class="record-id">{{ rec._id }}</span>
               </td>
               <td>
-                <span class="type-badge {% if rec.type == 'in' %}type-in{% else %}type-out{% endif %}">
-                  <i class="fas {% if rec.type == 'in' %}fa-arrow-down{% else %}fa-arrow-up{% endif %}"></i>
-                  {% if rec.type == 'in' %}進貨{% else %}出貨{% endif %}
+                <span class="type-badge {% if rec.type == 'in' %}type-in{% elif rec.type == 'out' %}type-out{% elif rec.type == 'set' %}type-set{% endif %}">
+                  <i class="fas {% if rec.type == 'in' %}fa-arrow-down{% elif rec.type == 'out' %}fa-arrow-up{% elif rec.type == 'set' %}fa-cogs{% endif %}"></i>
+                  {% if rec.type == 'in' %}進貨{% elif rec.type == 'out' %}出貨{% elif rec.type == 'set' %}設定{% endif %}
                 </span>
               </td>
               <td class="item-name">{{ rec.item }}</td>
