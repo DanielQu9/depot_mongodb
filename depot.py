@@ -246,7 +246,7 @@ class Depot:
 
     def __init_default_items(self):
         """配合esp, 給資料庫插入三組預設物品"""
-        j: dict = json.load(open("./config/item_id.json"))
+        j: dict = json.load(open("./config/item_id.json", encoding="utf-8"))
         lst = [j[i]["name"] for i in range(len(j))]
         for i in range(len(lst)):
             self.inventory.update_one(
