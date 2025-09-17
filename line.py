@@ -39,7 +39,7 @@ depot = Depot()
 
 @app.route("/")
 def index():
-    return redirect(url_for("line_web_menu"))
+    return redirect(url_for("line_web_menu", new=1))
 
 
 @app.route("/callback", methods=["POST"])
