@@ -1,6 +1,7 @@
 @echo off
 echo Starting Python applications...
 
+chcp 65001
 REM 設定工作目錄為批次檔所在目錄
 cd /d "%~dp0"
 echo Current directory: %cd%
