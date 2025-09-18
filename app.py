@@ -12,7 +12,10 @@ import time
 # ---- 初始化設定 ----
 CONFIG = json.load(open("./config/server_config.json", "r", encoding="utf-8"))
 ITEM_ID = json.load(open("./config/item_id.json", "r", encoding="utf-8"))
-app = Flask(__name__, template_folder="./new_templates")
+app = Flask(
+    __name__,
+    template_folder=("./new_templates" if CONFIG["new_ui"] == True else "./templates"),
+)
 sock = Sock(app)
 depot = Depot()
 clients = set()  # websocket-瀏覽器 列隊

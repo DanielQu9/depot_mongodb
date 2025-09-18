@@ -6,5 +6,6 @@
         "web_local": "http://127.0.0.1:5000",
         "sc": "http://127.0.0.1:6000/api/send-command",
         "xc": "http://127.0.0.1:6000/api/xarm-command"
-    }
+    },
+    "new_ui": false
 }
