@@ -99,6 +99,12 @@ class Depot:
 
     def write(self, DItem: DepotItem, source: str = "local") -> None:
         """新增一筆進出貨資料"""
+        if not isinstance(DItem, DepotItem):
+            raise DepotError(
+                f"警告: DItem 必須是 DepotItem 實例，接收到 {type(DItem).__name__}",
+                "DItem",
+            )
+
         self.__write_to_db(*DItem, source=source)
 
     def get_inventory(self) -> dict[str, int] | None:
