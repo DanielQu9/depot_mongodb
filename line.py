@@ -174,16 +174,16 @@ def handle_message(event):
                     style="primary",
                     action=URIAction(
                         label="前台網站",
-                        uri=f"{CONFIG["url"]["line"]}/line_web_menu",
+                        uri=f"{CONFIG["url"]["line"]}",
                     ),
                 ),
-                ButtonComponent(
-                    style="secondary",
-                    action=URIAction(
-                        label="[TEST]新版前台網站",
-                        uri=f"{CONFIG["url"]["line"]}/line_web_menu?new=1",
-                    ),
-                ),
+                # ButtonComponent(
+                #     style="secondary",
+                #     action=URIAction(
+                #         label="[TEST]新版前台網站",
+                #         uri=f"{CONFIG["url"]["line"]}/line_web_menu?new=1",
+                #     ),
+                # ),
                 # ButtonComponent(
                 #     style="secondary",
                 #     action=MessageAction(label="（佔位按鈕）", text="!todo"),
