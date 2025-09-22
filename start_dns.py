@@ -10,7 +10,7 @@ if __name__ == "__main__":
         with open(file="./.env", mode="w", encoding="utf-8") as file:
             file.write(token_str)
             print("請填寫api")
-            os._exit(0)
+        os._exit(0)
 
     env = dotenv_values()
     line = f'cloudflared tunnel run --token {env["LINE_DNS_TOKEN"]}'
