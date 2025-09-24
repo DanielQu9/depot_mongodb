@@ -62,8 +62,8 @@
         <select id="大螺母"></select>
         <label>鐵管：</label>
         <select id="鐵管"></select>
-        <label>塑膠管：</label>
-        <select id="塑膠管"></select>
+        <label>立布管：</label>
+        <select id="立布管"></select>
 
         <button class="btn send" onclick="confirmSelection()">確認</button>
         <h3>選擇清單：</h3>
@@ -169,7 +169,7 @@
         }
 
         function resetOrder() {
-            ["小螺母", "大螺母", "鐵管", "塑膠管"].forEach(id => {
+            ["小螺母", "大螺母", "鐵管", "立布管"].forEach(id => {
                 document.getElementById(id).value = 0;
             });
             currentOrder = [];
@@ -179,7 +179,7 @@
         document.addEventListener("DOMContentLoaded", async () => {
             // await loadConfig();
 
-            ["小螺母", "大螺母", "鐵管", "塑膠管"].forEach(id => {
+            ["小螺母", "大螺母", "鐵管", "立布管"].forEach(id => {
                 document.getElementById(id).innerHTML = generateOptions();
             });
         });
@@ -193,7 +193,7 @@
         }
 
         function confirmSelection() {
-            const selections = ["小螺母", "大螺母", "鐵管", "塑膠管"];
+            const selections = ["小螺母", "大螺母", "鐵管", "立布管"];
             currentOrder = [];
 
             selections.forEach(item => {
