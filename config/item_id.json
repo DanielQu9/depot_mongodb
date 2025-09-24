@@ -19,7 +19,7 @@
     },
     {
         "id": 2,
-        "name": "塑膠管",
+        "name": "立布管",
         "setting": {
             "no_auto_remove": true,
             "unit_weight": 1,
