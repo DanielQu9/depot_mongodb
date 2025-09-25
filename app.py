@@ -1,36 +1,68 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify
-from flask_sock import Sock
-from flask_cors import CORS
-from depot import Depot, DepotItem, DepotError
-import threading
-import requests
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+from depot import AsyncDepot, DepotItem, DepotError
 import markdown
+import asyncio
+import httpx
 import json
 import time
 
 
-# ---- 初始化設定 ----
+# ---- 初始化配置 ----
 CONFIG = json.load(open("./config/server_config.json", "r", encoding="utf-8"))
 ITEM_ID = json.load(open("./config/item_id.json", "r", encoding="utf-8"))
-app = Flask(
-    __name__,
-    template_folder=("./new_templates" if CONFIG["new_ui"] == True else "./templates"),
+app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
+app.mount("/static", StaticFiles(directory="static"), name="static")  # 掛載靜態資源
+templates = Jinja2Templates(
+    directory=("templates" if not CONFIG.get("new_ui", False) else "new_templates")
+)  # 模板目錄
+app.add_middleware(  # 允許跨網域讀資源
+    CORSMiddleware,
+    allow_origins=[CONFIG["url"]["line"], CONFIG["url"]["line_local"]],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-sock = Sock(app)
-depot = Depot()
-clients = set()  # websocket-瀏覽器 列隊
-clients_lock = threading.Lock()  # websocket-瀏覽器 鎖
-esp_connected = False  # websocket-esp 列隊
-esp_ws = None  # websocket-esp 連接實例
-esp_lock = threading.Lock()  # websocket-esp 鎖
-CORS(
-    app,
-    resources={
-        r"/menu_post": {"origins": [CONFIG["url"]["line"], CONFIG["url"]["line_local"]]}
-    },
-)  # 允許跨網域讀資源
-status_cache = None  # status狀態快取
+
+# ---- 全域物件初始化 ----
+depot = AsyncDepot()
+status_cache: list | None = None  # status狀態快取
+status_cache_lock = asyncio.Lock()
 status_last_time = time.time()  # status頁狀態-最後刷新時間
+
+
+class ConnectionManager:
+    """連線管理器, 維護瀏覽器客戶端連線與 ESP32 狀態"""
+
+    def __init__(self):
+        self.clients: list[WebSocket] = []
+        self.esp_connected: bool = False
+
+    async def connect_client(self, websocket: WebSocket):
+        await websocket.accept()
+        self.clients.append(websocket)
+
+    def disconnect_client(self, websocket: WebSocket):
+        if websocket in self.clients:
+            self.clients.remove(websocket)
+
+    async def broadcast(self, message: str):
+        for connection in self.clients:
+            try:
+                await connection.send_text(message)
+            except:
+                pass
+
+    async def broadcast_json(self, message: dict):
+        for connection in self.clients:
+            try:
+                await connection.send_json(message)
+            except:
+                pass
 
 
 def readme_to_html() -> str:
@@ -43,64 +75,79 @@ def readme_to_html() -> str:
         return "<h3>無法讀取 README.md</h3><p>目前無說明文件。</p>"
 
 
+manager = ConnectionManager()
 readme_html = readme_to_html()
 
 
-@app.route("/")
-def index():
-    # side_items：可動態新增選單
+# ---- 路由定義 ----
+@app.get("/", response_class=HTMLResponse)
+async def index(request: Request):
     side_items = [
         {"name": "首頁", "endpoint": "home"},
         {"name": "ESP32即時顯示", "endpoint": "esp_live"},
         {"name": "倉庫", "endpoint": "inventory"},
         {"name": "出/入貨物", "endpoint": "stock_input"},
         {"name": "貨物紀錄", "endpoint": "records"},
-        {"name": "狀態", "endpoint": "status"},
-        # 日後再加頁面，就在這邊添加
+        {"name": "狀態", "endpoint": "status_page"},
     ]
-    if request.args.get("new") == "1":
-        return render_template("new_base.html", side_items=side_items)
+    return templates.TemplateResponse(
+        "base.html", {"request": request, "side_items": side_items}
+    )
 
-    return render_template("base.html", side_items=side_items)
 
-
-@app.route("/home")
-def home():
+@app.get("/home", response_class=HTMLResponse)
+async def home(request: Request):
     """首頁"""
-    return render_template("home.html", readme_html=readme_html)
+    return templates.TemplateResponse(
+        "home.html", {"request": request, "readme_html": readme_html}
+    )
 
 
-@app.route("/inventory")
-def inventory():
+@app.get("/esp", response_class=HTMLResponse, name="esp_live")
+async def esp_live(request: Request):
+    """即時顯示秤重重量"""
+    return templates.TemplateResponse("live.html", {"request": request})
+
+
+@app.get("/inventory", response_class=HTMLResponse)
+async def inventory(request: Request):
     """倉庫庫存"""
-    inv = depot.get_inventory()
-    return render_template("inventory.html", items=inv)
+    inv = await depot.get_inventory()
+    return templates.TemplateResponse(
+        "inventory.html", {"request": request, "items": inv}
+    )
 
 
-@app.route("/records")
-def records():
-    """進出貨紀錄-輸出列表"""
-    table_list = sorted(depot.date_collections, reverse=True)  # 獲取所有資料表
-    # print(f"[flag]--------: {table_list}")
-    return render_template("records.html", tables=table_list)
+@app.get("/records", response_class=HTMLResponse)
+async def records(request: Request):
+    """進出貨紀錄 - 輸出框架網頁"""
+    table_list = sorted(await depot.date_collections, reverse=True)
+    return templates.TemplateResponse(
+        "records.html", {"request": request, "tables": table_list}
+    )
 
 
-@app.route("/records/data")
-def records_data():
-    """進出貨紀錄-輸出紀錄"""
-    table_name = request.args.get("date")
-    data = depot.find_records(str(table_name))
-    return render_template("records_data.html", data=data, date=table_name)
+@app.get("/records/data", response_class=HTMLResponse)
+async def records_data(request: Request, date: str):
+    """進出貨紀錄 - 輸出紀錄"""
+    data = await depot.find_records(date)
+    return templates.TemplateResponse(
+        "records_data.html", {"request": request, "data": data, "date": date}
+    )
 
 
-@app.route("/status")
-def status():
+@app.get("/status", response_class=HTMLResponse)
+async def status_page(request: Request):
+    """回傳狀態頁"""
     results = [{"name": "連線中", "url": "------連線中------"}]
-    return render_template("status.html", results=results, framework="Flask")
+    return templates.TemplateResponse(
+        "status.html", {"request": request, "results": results, "framework": "FastAPI"}
+    )
 
 
-@app.route("/status/data")
-def status_data():
+@app.get("/status/data")
+async def status_data(request: Request):
+    """檢查各服務是否上線"""
     global status_last_time, status_cache
     services = [
         {"name": "LineBot", "url": f"{CONFIG["url"]["line"]}/status"},
@@ -112,266 +159,144 @@ def status_data():
 
     # 如果快取存在且未過期，直接返回快取結果
     if (status_cache is not None) and (status_last_time + 10 > current_time):
-        return jsonify(results=status_cache)
+        return JSONResponse(content={"results": status_cache})
 
-    # 檢查網站是否存活
-    for svc in services:
-        try:
-            # 使用 HEAD 請求檢查，超時設為 3 秒
-            resp = requests.head(svc["url"], timeout=3)
-            online = resp.status_code < 400
-        except:
-            online = False
-        results.append({"name": svc["name"], "url": svc["url"], "online": online})
+    async with status_cache_lock:
+        # 雙重檢查，等鎖時防重複發送
+        if (status_cache is not None) and (status_last_time + 10 > current_time):
+            return JSONResponse(content={"results": status_cache})
 
-    # 檢查ESP32是否上線:
-    if esp_connected:
-        results[2]["online"] = True
-
-    status_last_time = current_time
-    status_cache = results
-
-    return jsonify(results=results)
-
-
-@app.route("/stock/input")
-def stock_input():
-    """進出貨-功能選單"""
-    inv = depot.get_inventory()
-    existing_items = list(inv.keys()) if inv else None
-    return render_template("stock_input.html", items=existing_items)
-
-
-@app.route("/stock/submit", methods=["POST"])
-def stock_submit():
-    """進出貨-提交選單"""
-    fail_data = []
-    data = request.get_json()
-    for stock in data:
-        try:
-            depot.write(
-                DepotItem(stock["type"], stock["item"], stock["amount"]), source="app"
-            )
-        except DepotError as err:
-            fail_data.append(err.message)
-        except Exception as err:
-            fail_data.append(err)
-
-    if not fail_data:
-        return {"status": "success", "message": f"共{len(data)}筆資料已成功處理"}
-    else:
-        return {
-            "status": "error",
-            "message": f"共{len(fail_data)}筆資料失敗, 原因:\n{''.join(f'{i}\n' for i in fail_data)}",
-        }
-
-
-@app.route("/menu_post", methods=["POST"])
-def menu_data():
-    try:
-        data = request.get_json()
-        menu_do_depot(data)
-        return jsonify({"status": "success", "message": "資料已成功寫入"})
-    except Exception as err:
-        return jsonify({"status": "error", "message": str(err)})
-
-
-@app.route("/esp")
-def esp_live():
-    """即時顯示秤重重量"""
-    return render_template("live.html")
-
-
-@app.route("/esp/reset", methods=["POST"])
-def live_reset():
-    """重製重量及數量"""
-    global esp_ws
-
-    # 準備重置後的數據
-    reset_data = {"final": True, "weight": 0, "small": 0, "big": 0, "tube": 0}
-    reset_data_json = json.dumps(reset_data)
-
-    try:
-        # 檢查 ESP32 是否連線
-        if not esp_connected or esp_ws is None:
-            # 廣播重置數據給所有瀏覽器
-            with clients_lock:
-                for client in list(clients):
-                    try:
-                        client.send(reset_data_json)
-                    except:
-                        # 跳過已斷線的 client
-                        pass
-
-            # 將重置數據傳遞給 esp_do_depot 處理
-            esp_do_depot(reset_data)
-            print("[esp/reset]-info: 已廣播重置數據並更新庫存")
-            return (
-                jsonify({"status": "error", "message": "ESP32 未連線，無法執行重置"}),
-                400,
-            )
-
-        # 向 ESP32 發送重置命令
-        reset_command = json.dumps({"command": "reset"})
-
-        with esp_lock:
-            try:
-                esp_ws.send(reset_command)
-                print("[esp/reset]-info: 已向 ESP32 發送重置命令")
-
-                # 廣播重置數據給所有瀏覽器
-                with clients_lock:
-                    for client in list(clients):
-                        try:
-                            client.send(reset_data_json)
-                        except:
-                            # 跳過已斷線的 client
-                            pass
-
-                # 將重置數據傳遞給 esp_do_depot 處理
-                esp_do_depot(reset_data)
-                print("[esp/reset]-info: 已廣播重置數據並更新庫存")
-
-                return jsonify(
-                    {
-                        "status": "success",
-                        "message": "重置命令已發送至 ESP32，數據已重置",
-                    }
-                )
-            except Exception as e:
-                print(f"[esp/reset]-error: 發送重置命令失敗: {e}")
-                return jsonify({"status": "error", "message": "發送重置命令失敗"}), 500
-
-    except Exception as e:
-        print(f"[esp/reset]-error: {e}")
-        return jsonify({"status": "error", "message": "重置操作失敗"}), 500
-
-
-@sock.route("/ws/client")
-def ws_client(ws):
-    """WebSocket協議, 瀏覽器端"""
-    # 新連線加入 clients
-    with clients_lock:
-        clients.add(ws)
-        print(f"[ws_client]-info: 用戶 {ws} 已連線")
-    # 初次建立時先告知當前 ESP32 狀態
-    with esp_lock:
-        ws.send(json.dumps({"type": "status", "esp": esp_connected}))
-    try:
-        # 只要連線沒斷，就保持 open（也可接收來自前端的訊息）
-        while True:
-            msg = ws.receive()
-            if msg is None:
-                break
-    finally:
-        with clients_lock:
-            print(f"[ws_client]-info: 用戶 {ws} 已離線")
-            clients.discard(ws)
-
-
-@sock.route("/ws/esp32")
-def ws_esp32(ws):
-    """WebSocket協議, esp32端"""
-    # ESP32 一旦連上，更新狀態並廣播，再持續接收它送來的 JSON 資料
-    global esp_connected, esp_ws
-    with esp_lock:
-        esp_connected = True
-        esp_ws = ws  # 保存 ESP32 WebSocket 連接
-        print("[ws_esp32]-info: ESP32 已連線")
-    # 廣播給所有瀏覽器：ESP32 已連線
-    with clients_lock, esp_lock:
-        for c in list(clients):
-            try:
-                c.send(json.dumps({"type": "status", "esp": True}))
-            except:
-                pass
-
-    while True:
-        raw = ws.receive()
-        if raw is None:
-            break
-
-        # 將接收到的內容轉傳給所有瀏覽器 clients
-        with clients_lock:
-            for client in list(clients):
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            for svc in services:
                 try:
-                    client.send(raw)
+                    resp = await client.get(svc["url"])
+                    online = resp.status_code < 400
                 except:
-                    # 跳過已斷線的 client
-                    pass
+                    online = False
+                results.append(
+                    {"name": svc["name"], "url": svc["url"], "online": online}
+                )
 
-        # 處理資料
-        esp_do_depot(json.loads(raw))
+            # 檢查ESP32是否上線:
+            if manager.esp_connected:
+                results[2]["online"] = True
 
-    # ESP32 斷線時，更新狀態並廣播
-    with esp_lock:
-        esp_connected = False
-        esp_ws = None  # 清除 ESP32 WebSocket 連接
-        print("[ws_esp32]-info: ESP32 已斷線")
-    with clients_lock, esp_lock:
-        for c in list(clients):
-            try:
-                c.send(json.dumps({"type": "status", "esp": False}))
-            except:
-                pass
+            status_last_time = current_time
+            status_cache = results
+
+            return JSONResponse(content={"results": results})
 
 
-def esp_do_depot(data: dict):
-    """寫入esp32出貨資料"""
-    if (not data) or (not data.get("final", False)):
-        return
-
-    as_name = {"small": "小螺母", "big": "大螺母", "tube": "鐵管"}
-    # 處理資料
-    try:
-        for i in data:
-            if i not in ["final", "weight"]:
-                depot.write(DepotItem("set", as_name.get(i, i), data[i]), "esp")  # type: ignore
-
-        print(f"[Depot]-info: write_down")
-    except DepotError as err:
-        print(f"[Depot]-error: {err}")
-        return jsonify({"status": "error", "message": f"data_bad: {err}"})
-
-    return jsonify({"status": "success", "message": "data_ok"})
-
-
-def menu_do_depot(data: dict):
-    """寫入menu出貨資料"""
-    # 處理資料
-    Ldata: list = data["items"]
-    for i in Ldata:
-        try:
-            depot.write(DepotItem("out", i["material"], i["quantity"]), "menu")
-        except DepotError as err:
-            print(f"[Depot]-error: {err}")
-
-    return jsonify({"status": "success", "message": "data_ok"})
-
-
-@app.route("/api/data")
-def index_page_api_data():
-    """暫時用不到\n回傳: item, count, unit_weight, min_weight_warning"""
-    return redirect(url_for("home"))
-    item = request.args.get("item")
-    if not item:
-        return jsonify({})
-    inventory = depot.get_inventory()
-    # 明確指定要查 tag 的 item
-    tag = depot.get_tag_json(item)
-    count = inventory.get(item, 0) if inventory else 0
-    unit_w = tag.get("unit_weight", 0) if tag else None
-    min_w = tag.get("min_weight_warning", 0) if tag else None
-    return jsonify(
-        {"item": item, "count": count, "unit_weight": unit_w, "min_weight": min_w}
+@app.get("/stock/input", response_class=HTMLResponse)
+async def stock_input(request: Request):
+    """貨物進出 - 框架網頁"""
+    inv: dict = await depot.get_inventory()
+    existing_items = list(inv.keys()) if inv else None
+    return templates.TemplateResponse(
+        "stock_input.html", {"request": request, "items": existing_items}
     )
 
 
-@app.errorhandler(404)
-def page_not_found(e):
+@app.post("/stock/submit")
+async def stock_submit(stock_data: list[dict]):
+    """貨物進出 - 資料處理"""
+    fail_data = []
+    for stock in stock_data:
+        try:
+            await depot.write(
+                DepotItem(stock["type"], stock["item"], stock["amount"]), source="app"
+            )
+        except DepotError as err:
+            fail_data.append(str(err))
+        except Exception as err:
+            fail_data.append(str(err))
+    if not fail_data:
+        return {"status": "success", "message": f"共{len(stock_data)}筆資料已成功處理"}
+    return {
+        "status": "error",
+        "message": f"共{len(fail_data)}筆資料均已忽略，原因:\n{''.join(fail_data)}",
+    }
+
+
+@app.post("/menu_post")
+async def menu_post(menu_data: dict):
+    try:
+        await menu_do_depot(menu_data)
+        return {"status": "success", "message": "資料已成功寫入"}
+    except Exception as err:
+        return {"status": "error", "message": str(err)}
+
+
+# ---- WebSocket: 瀏覽器客戶端 ----
+@app.websocket("/ws/client")
+async def ws_client(websocket: WebSocket):
+    """WebSocket協議 - 瀏覽器端"""
+    await manager.connect_client(websocket)
+    # 初次連線時發送當前 ESP32 連線狀態
+    await websocket.send_json({"type": "status", "esp": manager.esp_connected})
+    try:
+        while True:
+            await websocket.receive_text()  # 保持連線，只處理斷線情況
+    except WebSocketDisconnect:
+        manager.disconnect_client(websocket)
+
+
+# ---- WebSocket: ESP32 ----
+@app.websocket("/ws/esp32")
+async def ws_esp32(websocket: WebSocket):
+    """WebSocket協議 - esp32端"""
+    await websocket.accept()
+    manager.esp_connected = True
+    # ESP32 連線時，通知所有瀏覽器客戶端
+    await manager.broadcast_json({"type": "status", "esp": True})
+    try:
+        while True:
+            raw = await websocket.receive_text()
+            # 廣播接收到的原始資料給瀏覽器客戶端
+            await manager.broadcast(raw)
+            # 處理並寫入出貨資料
+            data = json.loads(raw)
+            await esp_do_depot(data)
+    except WebSocketDisconnect:
+        manager.esp_connected = False
+        # ESP32 斷線時，通知所有瀏覽器客戶端
+        await manager.broadcast_json({"type": "status", "esp": False})
+
+
+# ---- 功能方法 ----
+async def esp_do_depot(data: dict):
+    """處理 ESP32 傳來的出貨資料，並寫入 Depot"""
+    if (not data) or (not data.get("final", False)):
+        return
+    try:
+        for i in data:
+            await depot.write(DepotItem("set", i, data[i]), "esp")
+        # print("[Depot]-info: write_down")
+    except DepotError as err:
+        print(f"[Depot]-error: {err}")
+
+
+async def menu_do_depot(data: dict):
+    """處理 Menu 傳來的出貨資料，並寫入 Depot"""
+    for i in data["items"]:
+        try:
+            await depot.write(DepotItem("out", i["material"], i["quantity"]), "menu")
+        except DepotError as err:
+            print(f"[Depot]-error: {err}")
+
+
+# ---- 自訂 404 錯誤處理 ----
+@app.exception_handler(StarletteHTTPException)
+async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
     """自訂 404 頁面"""
-    return render_template("404.html"), 404
+    if exc.status_code == 404:
+        return templates.TemplateResponse(
+            "404.html", {"request": request}, status_code=404
+        )
+    return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    import uvicorn
+
+    uvicorn.run("app:app", host="127.0.0.1", port=5000, reload=True)
