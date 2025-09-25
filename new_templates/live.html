@@ -106,8 +106,15 @@
     }
 
     @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.5;
+      }
     }
 
     .reset-btn {
@@ -175,7 +182,7 @@
       z-index: 1;
     }
 
-    .data-card > * {
+    .data-card>* {
       position: relative;
       z-index: 2;
     }
@@ -220,8 +227,15 @@
     }
 
     @keyframes dataUpdate {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
+
+      0%,
+      100% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.05);
+      }
     }
 
     .data-unit {
@@ -258,6 +272,7 @@
         opacity: 0;
         transform: translateY(30px);
       }
+
       to {
         opacity: 1;
         transform: translateY(0);
@@ -284,9 +299,17 @@
       animation: fadeInUp 0.6s ease-out both;
     }
 
-    .data-card:nth-child(1) { animation-delay: 0.1s; }
-    .data-card:nth-child(2) { animation-delay: 0.2s; }
-    .data-card:nth-child(3) { animation-delay: 0.3s; }
+    .data-card:nth-child(1) {
+      animation-delay: 0.1s;
+    }
+
+    .data-card:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .data-card:nth-child(3) {
+      animation-delay: 0.3s;
+    }
 
     /* 響應式設計 */
     @media (max-width: 768px) {
@@ -295,25 +318,25 @@
         flex-direction: column;
         gap: 0.5rem;
       }
-      
+
       .status-row {
         flex-direction: column;
         align-items: flex-start;
         gap: 1rem;
       }
-      
+
       .data-grid {
         grid-template-columns: 1fr;
       }
-      
+
       .data-card {
         padding: 1.5rem;
       }
-      
+
       .total-weight .data-value {
         font-size: 2.5rem;
       }
-      
+
       .data-value {
         font-size: 2rem;
       }
@@ -323,11 +346,11 @@
       .container {
         padding: 1rem;
       }
-      
+
       .data-card {
         padding: 1rem;
       }
-      
+
       .connection-indicator {
         position: relative;
         top: auto;
@@ -390,7 +413,7 @@
         <div id="countSmall" class="data-value">--</div>
         <div class="data-unit">個</div>
       </div>
-      
+
       <div class="data-card">
         <div class="data-icon">
           <i class="fas fa-dot-circle"></i>
@@ -399,7 +422,7 @@
         <div id="countLarge" class="data-value">--</div>
         <div class="data-unit">個</div>
       </div>
-      
+
       <div class="data-card">
         <div class="data-icon">
           <i class="fas fa-pipe"></i>
@@ -408,12 +431,16 @@
         <div id="countTube" class="data-value">--</div>
         <div class="data-unit">根</div>
       </div>
-      </div>
+
+      <div class="data-card">
+        <div class="data-icon">
+          <i class="fas fa-pipe"></i>
+        </div>
         <h3 class="data-title">立布管數量</h3>
         <div id="countLibu" class="data-value">--</div>
         <div class="data-unit">根</div>
       </div>
-    </div>
+    
   </div>
 
   <!-- 連線指示器 -->
@@ -425,7 +452,7 @@
   <script>
     const protocol = location.hostname === "127.0.0.1" ? "ws" : "wss";
     const WS_CLIENT_URL = `${protocol}://${location.host}/ws/client`;
-    
+
     // DOM 元素
     const statusDot = document.getElementById("statusDot");
     const statusText = document.getElementById("statusText");
@@ -442,23 +469,23 @@
     async function resetESP() {
       const resetBtn = document.getElementById("resetBtn");
       const originalHTML = resetBtn.innerHTML;
-      
+
       try {
         resetBtn.disabled = true;
         resetBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 重置中...';
         resetBtn.style.background = '#6c757d';
-        
+
         const response = await fetch('/esp/reset', {
           method: 'POST'
         });
-        
+
         if (response.ok) {
           resetBtn.innerHTML = '<i class="fas fa-check"></i> 重置成功';
           resetBtn.style.background = 'linear-gradient(135deg, #48dbfb, #0abde3)';
-          
+
           // 顯示成功通知
           showNotification('ESP32 數據重置成功', 'success');
-          
+
           setTimeout(() => {
             resetBtn.disabled = false;
             resetBtn.innerHTML = originalHTML;
@@ -471,9 +498,9 @@
         console.error('重置錯誤:', error);
         resetBtn.innerHTML = '<i class="fas fa-times"></i> 重置失敗';
         resetBtn.style.background = 'linear-gradient(135deg, #ff6b6b, #ee5a6f)';
-        
+
         showNotification('ESP32 數據重置失敗', 'error');
-        
+
         setTimeout(() => {
           resetBtn.disabled = false;
           resetBtn.innerHTML = originalHTML;
@@ -503,7 +530,7 @@
         ws.onmessage = evt => {
           try {
             const msg = JSON.parse(evt.data);
-            
+
             if (msg.type === 'status') {
               // ESP32 狀態更新
               if (msg.esp) {
@@ -532,7 +559,7 @@
           statusText.textContent = "連線已斷開";
           connectionIndicator.innerHTML = '<i class="fas fa-wifi"></i> <span>重新連線中...</span>';
           connectionIndicator.style.color = '#dc3545';
-          
+
           if (reconnectAttempts < maxReconnectAttempts) {
             const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000);
             reconnectAttempts++;
