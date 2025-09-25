@@ -408,6 +408,11 @@
         <div id="countTube" class="data-value">--</div>
         <div class="data-unit">根</div>
       </div>
+      </div>
+        <h3 class="data-title">立布管數量</h3>
+        <div id="countLibu" class="data-value">--</div>
+        <div class="data-unit">根</div>
+      </div>
     </div>
   </div>
 
@@ -430,6 +435,7 @@
     const elSmall = document.getElementById("countSmall");
     const elLarge = document.getElementById("countLarge");
     const elTube = document.getElementById("countTube");
+    const elLibu = document.getElementById("countLibu");
     const connectionIndicator = document.getElementById("connectionIndicator");
 
     // 重置 ESP32 函數
@@ -513,6 +519,7 @@
               updateDataWithAnimation(elSmall, msg.small);
               updateDataWithAnimation(elLarge, msg.big);
               updateDataWithAnimation(elTube, msg.tube);
+              updateDataWithAnimation(elLibu, msg.libu);
             }
           } catch (error) {
             console.error('解析訊息錯誤:', error);
