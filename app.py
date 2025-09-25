@@ -17,7 +17,7 @@ import time
 CONFIG = json.load(open("./config/server_config.json", "r", encoding="utf-8"))
 ITEM_ID = json.load(open("./config/item_id.json", "r", encoding="utf-8"))
 app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
-app.mount("/static", StaticFiles(directory="static"), name="static")  # 掛載靜態資源
+# app.mount("/static", StaticFiles(directory="static"), name="static")  # 掛載靜態資源
 templates = Jinja2Templates(
     directory=("templates" if not CONFIG.get("new_ui", False) else "new_templates")
 )  # 模板目錄
