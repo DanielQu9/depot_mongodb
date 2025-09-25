@@ -322,6 +322,11 @@ class AsyncDepot:
 
     async def write(self, DItem: DepotItem, source: str = "local") -> None:
         """新增一筆進出貨資料"""
+        if not isinstance(DItem, DepotItem):
+            raise DepotError(
+                f"警告: DItem 必須是 DepotItem 實例，接收到 {type(DItem).__name__}",
+                "DItem",
+            )
 
         # 重新獲取日期
         self.collection = self.db[f"{date.today()}"]
