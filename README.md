@@ -9,11 +9,11 @@
 ~~倉庫管理 使用 <code>python gui.py</code> 執行~~ (停止維護)  
 配置env及隧道 使用 <code>python start_dns.py</code> 執行   
 LineBot開機 使用 <code>python line.py</code> 執行  
-  
+>Windows 系統可以直接使用 start_total 一次打開
 ## 配置  
 到 ./config 進行相關配置  
 server_config: 伺服器端配置  
-menu_config: 前端配置  
+item_id: 配置esp32物品 
 
 ## .env 配置範例:  
 ```
