@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -13,10 +14,19 @@ import json
 import time
 
 
+# ---- 應用生命週期管理 ----
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 應用啟動時的初始化操作
+    await depot.tool.clear_inventory(double_check=True)  # 初始化清空倉庫
+    yield
+    # 應用關閉時的清理操作（如果需要）
+
+
 # ---- 初始化配置 ----
 CONFIG = json.load(open("./config/server_config.json", "r", encoding="utf-8"))
 ITEM_ID = json.load(open("./config/item_id.json", "r", encoding="utf-8"))
-app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
+app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None, lifespan=lifespan)
 # app.mount("/static", StaticFiles(directory="static"), name="static")  # 掛載靜態資源
 templates = Jinja2Templates(
     directory=("templates" if not CONFIG.get("new_ui", False) else "new_templates")
@@ -30,7 +40,6 @@ app.add_middleware(  # 允許跨網域讀資源
 
 # ---- 全域物件初始化 ----
 depot = AsyncDepot()
-asyncio.run(depot.tool.clear_inventory(double_check=True))  # 初始化清空倉庫
 status_cache: list | None = None  # status狀態快取
 status_cache_lock = asyncio.Lock()
 status_last_time = time.time()  # status頁狀態-最後刷新時間
