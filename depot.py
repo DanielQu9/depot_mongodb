@@ -3,6 +3,8 @@ from typing import Literal, Any, Iterator
 from pymongo import MongoClient, AsyncMongoClient
 import json
 
+MONGO_ADDR = "mongodb://localhost:27017/"
+
 
 class DepotItem:
     """
@@ -85,7 +87,7 @@ class Depot:
 
     def __init__(self) -> None:
         # 連線
-        self.client = MongoClient("mongodb://localhost:27017/")
+        self.client = MongoClient(MONGO_ADDR)
         self.db = self.client["depotDB"]
 
         # 資料表
@@ -307,7 +309,7 @@ class AsyncDepot:
 
     def __init__(self) -> None:
         # 連線
-        self.client = AsyncMongoClient("mongodb://localhost:27017/")
+        self.client = AsyncMongoClient(MONGO_ADDR)
         self.db = self.client["depotDB"]
 
         # 資料表
@@ -443,6 +445,16 @@ class AsyncDepot:
     async def date_collections(self) -> list[str]:
         """獲取所有非 inventory 的子資料表"""
         return [i for i in await self.db.list_collection_names() if i != "inventory"]
+
+
+class Tool:
+    def __init__(self) -> None:
+        # 連線
+        self.client = AsyncMongoClient(MONGO_ADDR)
+        self.db = self.client["depotDB"]
+
+        # 資料表
+        self.inventory = self.db["inventory"]  # 倉庫
 
 
 if __name__ == "__main__":
