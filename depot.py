@@ -125,11 +125,11 @@ class Depot:
         Returns:
             dict[str, int] | None: 物品名稱與數量的字典，如果倉庫為空則返回 None
 
-        Example:
-            inventory = depot.get_inventory()
-            if inventory is not None:
-                for name, amount in inventory.items():
-                    print(name, amount)
+        範例:\n
+          inventory = depot.get_inventory()
+          if inventory is not None:
+           for name, amount in inventory.items():
+            print(name, amount)
         """
         Doc = list(self.inventory.find())
         if Doc == []:
@@ -450,12 +450,12 @@ class AsyncDepot:
         Returns:
             dict[str, int]: 物品名稱與數量的字典
 
-        Example:
-            async def main():
-                db = AsyncDepot()
-                inventory = await db.get_inventory()
-                for name, amount in inventory.items():
-                    print(name, amount)
+        範例:\n
+          async def main():
+            db = AsyncDepot()
+            inventory = await db.get_inventory()
+            for name, amount in inventory.items():
+              print(name, amount)
         """
         return {
             items["item"]: items.get("amount", -32768)
