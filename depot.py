@@ -456,6 +456,29 @@ class Tool:
         # 資料表
         self.inventory = self.db["inventory"]  # 倉庫
 
+    async def clear_inventory(self, double_check: bool) -> bool:
+        """
+        清空 inventory 資料表
+
+        Args:
+            double_check (bool): 安全確認，必須為 True 才會執行清空操作
+
+        Returns:
+            bool: 操作是否成功
+        """
+        if not double_check:
+            print("警告: double_check 參數必須為 True 才能執行清空操作")
+            return False
+
+        try:
+            # 刪除 inventory 資料表中的所有文件
+            result = await self.inventory.delete_many({})
+            print(f"成功清空 inventory 資料表，共刪除 {result.deleted_count} 筆資料")
+            return True
+        except Exception as e:
+            print(f"清空 inventory 資料表時發生錯誤: {e}")
+            return False
+
 
 if __name__ == "__main__":
     depot = Depot()
