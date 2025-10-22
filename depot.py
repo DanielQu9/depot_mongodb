@@ -102,6 +102,9 @@ class Depot:
         # 添加預設資料
         self.__init_default_items()
 
+        # 初始化工具類別
+        self.tool = self.Tool(self)
+
     def write(self, DItem: DepotItem, source: str = "local") -> None:
         """
         新增一筆進出貨資料
@@ -329,6 +332,50 @@ class Depot:
                 upsert=True,
             )
 
+    class Tool:
+        """
+        倉庫管理工具類別
+
+        提供額外的倉庫管理功能，如清空倉庫等操作
+        """
+
+        def __init__(self, parent_depot: "Depot") -> None:
+            """
+            初始化工具類別
+
+            Args:
+                parent_depot: 父級 Depot 實例
+            """
+            self.parent = parent_depot
+            self.client = parent_depot.client
+            self.db = parent_depot.db
+            self.inventory = parent_depot.inventory
+
+        def clear_inventory(self, double_check: bool) -> bool:
+            """
+            清空 inventory 資料表
+
+            Args:
+                double_check: 安全確認，必須為 True 才會執行清空操作
+
+            Returns:
+                bool: 操作是否成功
+            """
+            if not double_check:
+                print("警告: double_check 參數必須為 True 才能執行清空操作")
+                return False
+
+            try:
+                # 刪除 inventory 資料表中的所有文件
+                result = self.inventory.delete_many({})
+                print(
+                    f"成功清空 inventory 資料表，共刪除 {result.deleted_count} 筆資料"
+                )
+                return True
+            except Exception as e:
+                print(f"清空 inventory 資料表時發生錯誤: {e}")
+                return False
+
 
 class AsyncDepot:
     """
@@ -371,6 +418,9 @@ class AsyncDepot:
         # 添加預設資料
         sync_depot = Depot()
         sync_depot._Depot__init_default_items()  # type: ignore
+
+        # 初始化工具類別
+        self.tool = self.Tool(self)
 
     async def write(self, DItem: DepotItem, source: str = "local") -> None:
         """
@@ -528,38 +578,49 @@ class AsyncDepot:
         """
         return [i for i in await self.db.list_collection_names() if i != "inventory"]
 
-
-class Tool:
-    def __init__(self) -> None:
-        # 連線
-        self.client = MongoClient(MONGO_ADDR)
-        self.db = self.client["depotDB"]
-
-        # 資料表
-        self.inventory = self.db["inventory"]  # 倉庫
-
-    def clear_inventory(self, double_check: bool) -> bool:
+    class Tool:
         """
-        清空 inventory 資料表
+        非同步倉庫管理工具類別
 
-        Args:
-            double_check (bool): 安全確認，必須為 True 才會執行清空操作
-
-        Returns:
-            bool: 操作是否成功
+        提供額外的非同步倉庫管理功能，如清空倉庫等操作
         """
-        if not double_check:
-            print("警告: double_check 參數必須為 True 才能執行清空操作")
-            return False
 
-        try:
-            # 刪除 inventory 資料表中的所有文件
-            result = self.inventory.delete_many({})
-            print(f"成功清空 inventory 資料表，共刪除 {result.deleted_count} 筆資料")
-            return True
-        except Exception as e:
-            print(f"清空 inventory 資料表時發生錯誤: {e}")
-            return False
+        def __init__(self, parent_depot: "AsyncDepot") -> None:
+            """
+            初始化工具類別
+
+            Args:
+                parent_depot: 父級 AsyncDepot 實例
+            """
+            self.parent = parent_depot
+            self.client = parent_depot.client
+            self.db = parent_depot.db
+            self.inventory = parent_depot.inventory
+
+        async def clear_inventory(self, double_check: bool) -> bool:
+            """
+            清空 inventory 資料表（非同步版本）
+
+            Args:
+                double_check: 安全確認，必須為 True 才會執行清空操作
+
+            Returns:
+                bool: 操作是否成功
+            """
+            if not double_check:
+                print("警告: double_check 參數必須為 True 才能執行清空操作")
+                return False
+
+            try:
+                # 刪除 inventory 資料表中的所有文件
+                result = await self.inventory.delete_many({})
+                print(
+                    f"成功清空 inventory 資料表，共刪除 {result.deleted_count} 筆資料"
+                )
+                return True
+            except Exception as e:
+                print(f"清空 inventory 資料表時發生錯誤: {e}")
+                return False
 
 
 if __name__ == "__main__":
