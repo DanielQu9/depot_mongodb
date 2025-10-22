@@ -19,10 +19,13 @@ class DepotItem:
         time=None,
     ) -> None:
         """
-        type: 'in' or 'out' or 'auto'(自動辨識正負數) or 'set'(設置數量, 跳過檢查)\n
-        item: 商品名稱\n
-        amount: 數量（正整數）\n
-        time: 時間（可選，預設為現在時間）\n
+        初始化倉庫項目
+
+        Args:
+            type: 操作類型 - 'in'(入庫) / 'out'(出庫) / 'auto'(自動辨識正負數) / 'set'(設置數量, 跳過檢查)
+            item: 商品名稱
+            amount: 數量（正整數）
+            time: 時間（可選，預設為現在時間）
         """
 
         # 格式驗證
@@ -100,7 +103,13 @@ class Depot:
         self.__init_default_items()
 
     def write(self, DItem: DepotItem, source: str = "local") -> None:
-        """新增一筆進出貨資料"""
+        """
+        新增一筆進出貨資料
+
+        Args:
+            DItem: DepotItem 實例，包含操作詳細資訊
+            source: 資料來源標識，預設為 "local"
+        """
         if not isinstance(DItem, DepotItem):
             raise DepotError(
                 f"警告: DItem 必須是 DepotItem 實例，接收到 {type(DItem).__name__}",
@@ -111,15 +120,16 @@ class Depot:
 
     def get_inventory(self) -> dict[str, int] | None:
         """
-        輸出當前倉庫內容\n
-        建議使用 dict.items() 獲取物品和數量\n
-        範例:\n
-         inventory = Depot.get_inventory()\n
-         if inventory is None:
-            ...
-         else:
-            for name, amount in inventory.items():
-                print(name, amount)
+        輸出當前倉庫內容
+
+        Returns:
+            dict[str, int] | None: 物品名稱與數量的字典，如果倉庫為空則返回 None
+
+        Example:
+            inventory = depot.get_inventory()
+            if inventory is not None:
+                for name, amount in inventory.items():
+                    print(name, amount)
         """
         Doc = list(self.inventory.find())
         if Doc == []:
@@ -128,7 +138,12 @@ class Depot:
             return {items["item"]: items.get("amount", -32768) for items in Doc}
 
     def show_inventory(self) -> None:
-        """打印當前庫存內容"""
+        """
+        打印當前庫存內容到控制台
+
+        Note:
+            直接輸出格式化的庫存資訊，無返回值
+        """
         print("倉庫現況：")
         Doc = self.get_inventory()
 
@@ -199,9 +214,14 @@ class Depot:
 
     def set_tag(self, item: str, tag: dict[str, Any]) -> None:
         """
-        為倉庫資料插入tag屬性\n
-        item: 物品名稱\n
-        tag: 插入標籤\n
+        為倉庫資料插入 tag 屬性
+
+        Args:
+            item: 物品名稱
+            tag: 插入的標籤字典
+
+        Note:
+            如果物品不存在於倉庫中，將輸出警告訊息
         """
         data = self.inventory.find_one({"item": item})
         if data == None:
@@ -212,8 +232,13 @@ class Depot:
 
     def get_tag_json(self, item: str) -> dict[str, Any] | None:
         """
-        返回tag表\n
-        item: 物品名稱\n
+        返回指定物品的 tag 標籤資料
+
+        Args:
+            item: 物品名稱
+
+        Returns:
+            dict[str, Any] | None: 標籤字典，如果物品不存在則返回 None
         """
         data = self.inventory.find_one({"item": item})
         if data == None:
@@ -224,8 +249,13 @@ class Depot:
 
     def in_inventory(self, item: str) -> bool:
         """
-        檢查該物品是否存在於倉庫內\n
-        item: 物品名稱\n
+        檢查該物品是否存在於倉庫內
+
+        Args:
+            item: 物品名稱
+
+        Returns:
+            bool: 物品是否存在於倉庫中
         """
         if self.inventory.find_one({"item": item}) is None:
             print(f"警告: 倉庫內未找到 {item} 請確認已添加物品，已忽略此筆。")
@@ -234,8 +264,13 @@ class Depot:
 
     def find_records(self, date: str) -> list | None:
         """
-        依據日期找資料表, 並回傳其紀錄\n
-        date: 格式為 YYYY-MM-DD
+        依據日期尋找資料表並回傳其紀錄
+
+        Args:
+            date: 日期字串，格式為 YYYY-MM-DD
+
+        Returns:
+            list | None: 該日期的紀錄列表，如果不存在則返回 None
         """
 
         if date not in self.date_collections:
@@ -244,16 +279,31 @@ class Depot:
 
     @property
     def __today_collection(self):
-        """當日資料表"""
+        """
+        當日資料表
+
+        Returns:
+            Collection: 當前日期對應的 MongoDB 集合
+        """
         return self.db[f"{date.today()}"]
 
     @property
     def date_collections(self) -> list[str]:
-        """獲取所有非 inventory 的子資料表"""
+        """
+        獲取所有非 inventory 的子資料表
+
+        Returns:
+            list[str]: 日期格式的資料表名稱列表
+        """
         return [i for i in self.db.list_collection_names() if i != "inventory"]
 
     def __init_default_items(self):
-        """配合esp, 給資料庫插入三組預設物品"""
+        """
+        配合 ESP 設備，給資料庫插入預設物品
+
+        Note:
+            從 config/item_id.json 讀取配置並初始化預設物品至資料庫
+        """
         j: dict = json.load(open("./config/item_id.json", encoding="utf-8"))
         lst = [j[i]["name"] for i in range(len(j))]
         for i in range(len(lst)):
@@ -323,7 +373,13 @@ class AsyncDepot:
         sync_depot._Depot__init_default_items()  # type: ignore
 
     async def write(self, DItem: DepotItem, source: str = "local") -> None:
-        """新增一筆進出貨資料"""
+        """
+        新增一筆進出貨資料（非同步版本）
+
+        Args:
+            DItem: DepotItem 實例，包含操作詳細資訊
+            source: 資料來源標識，預設為 "local"
+        """
         if not isinstance(DItem, DepotItem):
             raise DepotError(
                 f"警告: DItem 必須是 DepotItem 實例，接收到 {type(DItem).__name__}",
@@ -389,14 +445,17 @@ class AsyncDepot:
 
     async def get_inventory(self) -> dict[str, int]:
         """
-        輸出當前倉庫內容\n
-        建議使用 dict.items() 獲取物品和數量\n
-        範例:\n
-         async def main():
-           db = AsyncDepot()
-           inventory = await db.get_inventory()
-           for name, amount in inventory.items():
-             print(name, amount)
+        輸出當前倉庫內容（非同步版本）
+
+        Returns:
+            dict[str, int]: 物品名稱與數量的字典
+
+        Example:
+            async def main():
+                db = AsyncDepot()
+                inventory = await db.get_inventory()
+                for name, amount in inventory.items():
+                    print(name, amount)
         """
         return {
             items["item"]: items.get("amount", -32768)
@@ -405,9 +464,14 @@ class AsyncDepot:
 
     async def set_tag(self, item: str, tag: dict[str, Any]) -> None:
         """
-        為倉庫資料插入tag屬性\n
-        item: 物品名稱\n
-        tag: 插入標籤\n
+        為倉庫資料插入 tag 屬性（非同步版本）
+
+        Args:
+            item: 物品名稱
+            tag: 插入的標籤字典
+
+        Raises:
+            DepotError: 如果物品不存在於倉庫中
         """
         data = await self.inventory.find_one({"item": item})
         if data is None:
@@ -421,8 +485,16 @@ class AsyncDepot:
 
     async def get_tag_json(self, item: str) -> dict[str, Any] | None:
         """
-        返回tag表\n
-        item: 物品名稱\n
+        返回指定物品的 tag 標籤資料（非同步版本）
+
+        Args:
+            item: 物品名稱
+
+        Returns:
+            dict[str, Any] | None: 標籤字典
+
+        Raises:
+            DepotError: 如果物品不存在於倉庫中
         """
         data = await self.inventory.find_one({"item": item})
         if data is None:
@@ -434,8 +506,13 @@ class AsyncDepot:
 
     async def find_records(self, date: str) -> list[Any] | None:
         """
-        依據日期找資料表, 並回傳其紀錄\n
-        date: 格式為 YYYY-MM-DD
+        依據日期尋找資料表並回傳其紀錄（非同步版本）
+
+        Args:
+            date: 日期字串，格式為 YYYY-MM-DD
+
+        Returns:
+            list[Any] | None: 該日期的紀錄列表，如果不存在則返回 None
         """
         if date not in await self.date_collections:
             return None
@@ -443,7 +520,12 @@ class AsyncDepot:
 
     @property
     async def date_collections(self) -> list[str]:
-        """獲取所有非 inventory 的子資料表"""
+        """
+        獲取所有非 inventory 的子資料表（非同步版本）
+
+        Returns:
+            list[str]: 日期格式的資料表名稱列表
+        """
         return [i for i in await self.db.list_collection_names() if i != "inventory"]
 
 
