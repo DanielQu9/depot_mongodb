@@ -129,6 +129,16 @@ async def inventory(request: Request):
     )
 
 
+@app.post("/reset")
+async def reset_inv(request: Request):
+    """清空倉庫庫存"""
+    try:
+        await depot.tool.clear_inventory(double_check=True)
+        return {"status": "success", "message": f"成功重製倉庫內容"}
+    except DepotError as err:
+        return {"status": "error", "message": f"失敗，原因: {err}"}
+
+
 @app.get("/records", response_class=HTMLResponse)
 async def records(request: Request):
     """進出貨紀錄 - 輸出框架網頁"""
