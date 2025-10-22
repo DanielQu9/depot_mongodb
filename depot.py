@@ -2,8 +2,141 @@ from datetime import datetime, date
 from typing import Literal, Any, Iterator
 from pymongo import MongoClient, AsyncMongoClient
 import json
+import logging
+import sys
 
 MONGO_ADDR = "mongodb://localhost:27017/"
+
+# 全局設定
+ENABLE_COLORS = True  # 設置為 False 可關閉顏色輸出
+
+
+def set_color_mode(enabled: bool) -> None:
+    """
+    動態設置顏色輸出模式
+
+    Args:
+        enabled: True 啟用顏色輸出，False 關閉顏色輸出
+    """
+    global ENABLE_COLORS
+    ENABLE_COLORS = enabled
+    status = "啟用" if enabled else "關閉"
+    _log_operation("INFO", "顏色輸出模式", f"已{status}顏色輸出")
+
+
+# 設置日誌配置
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
+)
+
+# 創建專用的 logger
+depot_logger = logging.getLogger("depot")
+
+
+# ANSI 顏色代碼
+class Colors:
+    """ANSI 顏色代碼常數"""
+
+    RESET = "\033[0m"
+    BOLD = "\033[1m"
+    DIM = "\033[2m"
+
+    # 前景色
+    BLACK = "\033[30m"
+    RED = "\033[31m"
+    GREEN = "\033[32m"
+    YELLOW = "\033[33m"
+    BLUE = "\033[34m"
+    MAGENTA = "\033[35m"
+    CYAN = "\033[36m"
+    WHITE = "\033[37m"
+
+    # 亮色
+    BRIGHT_RED = "\033[91m"
+    BRIGHT_GREEN = "\033[92m"
+    BRIGHT_YELLOW = "\033[93m"
+    BRIGHT_BLUE = "\033[94m"
+    BRIGHT_MAGENTA = "\033[95m"
+    BRIGHT_CYAN = "\033[96m"
+    BRIGHT_WHITE = "\033[97m"
+
+    # 背景色
+    BG_RED = "\033[41m"
+    BG_GREEN = "\033[42m"
+    BG_YELLOW = "\033[43m"
+    BG_BLUE = "\033[44m"
+
+
+def _log_operation(
+    level: str,
+    operation: str,
+    details: str = "",
+    item: str = "",
+    amount: int | None = None,
+):
+    """
+    統一的日誌輸出函數（帶顏色支持）
+
+    Args:
+        level: 日誌等級 ('INFO', 'WARNING', 'ERROR', 'SUCCESS')
+        operation: 操作類型
+        details: 詳細信息
+        item: 物品名稱
+        amount: 數量
+    """
+    # 根據等級選擇顏色和前綴
+    if ENABLE_COLORS:
+        if level == "SUCCESS":
+            color = Colors.BRIGHT_GREEN
+            prefix = f"{Colors.BOLD}SUCCESS{Colors.RESET} {color}[成功]{Colors.RESET}"
+        elif level == "WARNING":
+            color = Colors.BRIGHT_YELLOW
+            prefix = f"{Colors.BOLD}WARNING{Colors.RESET} {color}[警告]{Colors.RESET}"
+        elif level == "ERROR":
+            color = Colors.BRIGHT_RED
+            prefix = f"{Colors.BOLD}ERROR{Colors.RESET} {color}[錯誤]{Colors.RESET}"
+        else:
+            color = Colors.BRIGHT_CYAN
+            prefix = f"{Colors.BOLD}INFO{Colors.RESET} {color}[資訊]{Colors.RESET}"
+
+        # 構建彩色消息
+        message = f"{prefix} {Colors.WHITE}{operation}{Colors.RESET}"
+
+        if item:
+            message += f" - {Colors.BRIGHT_BLUE}物品:{Colors.RESET} {Colors.CYAN}{item}{Colors.RESET}"
+        if amount is not None:
+            message += f" - {Colors.BRIGHT_BLUE}數量:{Colors.RESET} {Colors.MAGENTA}{amount}{Colors.RESET}"
+        if details:
+            message += f" - {Colors.DIM}{details}{Colors.RESET}"
+
+        # 輸出彩色日誌
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        colored_message = f"{Colors.DIM}{timestamp}{Colors.RESET} - {Colors.BOLD}depot{Colors.RESET} - {message}"
+        print(colored_message)
+    else:
+        # 無顏色版本（回退到原始格式）
+        if level == "SUCCESS":
+            message = f"[成功] {operation}"
+        elif level == "WARNING":
+            message = f"[警告] {operation}"
+        elif level == "ERROR":
+            message = f"[錯誤] {operation}"
+        else:
+            message = f"[資訊] {operation}"
+
+        if item:
+            message += f" - 物品: {item}"
+        if amount is not None:
+            message += f" - 數量: {amount}"
+        if details:
+            message += f" - {details}"
+
+        # 使用標準 logger
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        plain_message = f"{timestamp} - depot - {message}"
+        print(plain_message)
 
 
 class DepotItem:
@@ -147,14 +280,14 @@ class Depot:
         Note:
             直接輸出格式化的庫存資訊，無返回值
         """
-        print("倉庫現況：")
+        _log_operation("INFO", "查詢倉庫現況")
         Doc = self.get_inventory()
 
         if Doc != None:
             for item, amount in Doc.items():
-                print(f"    {item}: {amount} 件")
+                _log_operation("INFO", "庫存項目", f"{amount} 件", item, amount)
         else:
-            print(f"    倉庫為空")
+            _log_operation("INFO", "倉庫狀態", "倉庫為空")
 
     def __write_to_db(
         self,
@@ -199,7 +332,13 @@ class Depot:
             "source": source,
         }
         result = self.collection.insert_one(record)
-        print(f"紀錄 [{type}] {item}*{amount} 成功，紀錄 ID: {result.inserted_id}")
+        _log_operation(
+            "SUCCESS",
+            f"倉庫{type}庫操作",
+            f"紀錄 ID: {result.inserted_id}",
+            item,
+            amount,
+        )
 
         # 刪除歸零倉庫位
         if self.remove_on_zero:
@@ -213,7 +352,7 @@ class Depot:
                     ],
                 }
             )
-            print(f"移除 空物品 {item} 成功")
+            _log_operation("SUCCESS", "自動移除空物品", "", item)
 
     def set_tag(self, item: str, tag: dict[str, Any]) -> None:
         """
@@ -228,7 +367,9 @@ class Depot:
         """
         data = self.inventory.find_one({"item": item})
         if data == None:
-            print(f"警告: 倉庫內未找到 {item} 請確認已添加物品，已忽略此筆。")
+            _log_operation(
+                "WARNING", "設置標籤失敗", "倉庫內未找到物品，請確認已添加物品", item
+            )
             return None
 
         self.inventory.update_one({"item": item}, {"$set": {f"tag": tag}}, upsert=True)
@@ -245,7 +386,9 @@ class Depot:
         """
         data = self.inventory.find_one({"item": item})
         if data == None:
-            print(f"警告: 倉庫內未找到 {item} 請確認已添加物品，已忽略此筆。")
+            _log_operation(
+                "WARNING", "獲取標籤失敗", "倉庫內未找到物品，請確認已添加物品", item
+            )
             return None
 
         return dict(data).get("tag", {})
@@ -261,7 +404,9 @@ class Depot:
             bool: 物品是否存在於倉庫中
         """
         if self.inventory.find_one({"item": item}) is None:
-            print(f"警告: 倉庫內未找到 {item} 請確認已添加物品，已忽略此筆。")
+            _log_operation(
+                "WARNING", "檢查物品存在性", "倉庫內未找到物品，請確認已添加物品", item
+            )
             return False
         return True
 
@@ -362,19 +507,23 @@ class Depot:
                 bool: 操作是否成功
             """
             if not double_check:
-                print("警告: double_check 參數必須為 True 才能執行清空操作")
+                _log_operation(
+                    "WARNING",
+                    "清空倉庫操作",
+                    "double_check 參數必須為 True 才能執行清空操作",
+                )
                 return False
 
             try:
                 # 刪除 inventory 資料表中的所有文件
                 result = self.inventory.delete_many({})
-                print(
-                    f"成功清空 inventory 資料表，共刪除 {result.deleted_count} 筆資料"
+                _log_operation(
+                    "SUCCESS", "清空倉庫", f"共刪除 {result.deleted_count} 筆資料"
                 )
                 self.parent.__init__()
                 return True
             except Exception as e:
-                print(f"清空 inventory 資料表時發生錯誤: {e}")
+                _log_operation("ERROR", "清空倉庫失敗", str(e))
                 return False
 
 
@@ -478,7 +627,13 @@ class AsyncDepot:
             "source": source,
         }
         result = await self.collection.insert_one(record)
-        print(f"紀錄 [{type}] {item}*{amount} 成功，紀錄 ID: {result.inserted_id}")
+        _log_operation(
+            "SUCCESS",
+            f"倉庫{type}庫操作",
+            f"紀錄 ID: {result.inserted_id}",
+            item,
+            amount,
+        )
 
         # 刪除歸零倉庫位
         if self.remove_on_zero:
@@ -492,7 +647,7 @@ class AsyncDepot:
                     ],
                 }
             )
-            print(f"移除 空物品 {item} 成功")
+            _log_operation("SUCCESS", "自動移除空物品", "", item)
 
     async def get_inventory(self) -> dict[str, int]:
         """
@@ -609,19 +764,23 @@ class AsyncDepot:
                 bool: 操作是否成功
             """
             if not double_check:
-                print("警告: double_check 參數必須為 True 才能執行清空操作")
+                _log_operation(
+                    "WARNING",
+                    "清空倉庫操作",
+                    "double_check 參數必須為 True 才能執行清空操作",
+                )
                 return False
 
             try:
                 # 刪除 inventory 資料表中的所有文件
                 result = await self.inventory.delete_many({})
-                print(
-                    f"成功清空 inventory 資料表，共刪除 {result.deleted_count} 筆資料"
+                _log_operation(
+                    "SUCCESS", "清空倉庫", f"共刪除 {result.deleted_count} 筆資料"
                 )
                 self.parent.__init__()
                 return True
             except Exception as e:
-                print(f"清空 inventory 資料表時發生錯誤: {e}")
+                _log_operation("ERROR", "清空倉庫失敗", str(e))
                 return False
 
 
