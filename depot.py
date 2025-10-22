@@ -371,6 +371,7 @@ class Depot:
                 print(
                     f"成功清空 inventory 資料表，共刪除 {result.deleted_count} 筆資料"
                 )
+                self.parent.__init__()
                 return True
             except Exception as e:
                 print(f"清空 inventory 資料表時發生錯誤: {e}")
@@ -617,6 +618,7 @@ class AsyncDepot:
                 print(
                     f"成功清空 inventory 資料表，共刪除 {result.deleted_count} 筆資料"
                 )
+                self.parent.__init__()
                 return True
             except Exception as e:
                 print(f"清空 inventory 資料表時發生錯誤: {e}")
