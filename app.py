@@ -295,8 +295,8 @@ async def esp_do_depot(data: dict):
                         source="esp",
                     )
             esp_do_depot_last = data
-    except DepotError as err:
-        print(f"[Depot]-error: {err}")
+    except DepotError:
+        pass
 
 
 async def menu_do_depot(data: dict):
@@ -304,8 +304,8 @@ async def menu_do_depot(data: dict):
     for i in data["items"]:
         try:
             await depot.write(DepotItem("out", i["material"], i["quantity"]), "menu")
-        except DepotError as err:
-            print(f"[Depot]-error: {err}")
+        except DepotError:
+            pass
 
 
 # ---- 自訂 404 錯誤處理 ----
