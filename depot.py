@@ -194,7 +194,16 @@ class DepotError(Exception):
     def __init__(self, message: str, field: str | None = None):
         self.message = message
         self.field = field
-        super().__init__(f"{message} (欄位：{field})" if field else message)
+
+        # 輸出彩色錯誤日誌
+        if field:
+            _log_operation("ERROR", "DepotError 異常", f"欄位: {field}", message)
+            error_msg = f"{message} (欄位：{field})"
+        else:
+            _log_operation("ERROR", "DepotError 異常", "", message)
+            error_msg = message
+
+        super().__init__(error_msg)
 
 
 class Depot:
@@ -590,7 +599,7 @@ class AsyncDepot:
         self.collection = self.db[f"{date.today()}"]
 
         # 解包資料
-        type: Literal["in", "out", "set"] = DItem.type
+        operation_type: Literal["in", "out", "set"] = DItem.type
         item: str = DItem.item
         amount: int = DItem.amount
         time: datetime = DItem.time
@@ -599,16 +608,16 @@ class AsyncDepot:
         item_doc = await self.inventory.find_one({"item": item})
         current_amount = item_doc["amount"] if item_doc else 0
 
-        if type == "in":
+        if operation_type == "in":
             new_amount = current_amount + amount
-        elif type == "out":
+        elif operation_type == "out":
             if current_amount < amount:
                 raise DepotError(
                     f"警告: 紀錄目標 {item} 為負數，當前: {current_amount}，目標: {current_amount - amount}，已忽略此筆。"
                 )
             else:
                 new_amount = current_amount - amount
-        elif type == "set":
+        elif operation_type == "set":
             new_amount = amount
 
         # 更新或新增庫存
@@ -620,7 +629,7 @@ class AsyncDepot:
 
         # 寫入當天的紀錄表
         record = {
-            "type": type,
+            "type": operation_type,
             "item": item,
             "amount": amount,
             "time": time,
@@ -629,7 +638,7 @@ class AsyncDepot:
         result = await self.collection.insert_one(record)
         _log_operation(
             "SUCCESS",
-            f"倉庫{type}庫操作",
+            f"倉庫{operation_type}庫操作",
             f"紀錄 ID: {result.inserted_id}",
             item,
             amount,
