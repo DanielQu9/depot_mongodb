@@ -30,9 +30,11 @@ app.add_middleware(  # 允許跨網域讀資源
 
 # ---- 全域物件初始化 ----
 depot = AsyncDepot()
+asyncio.run(depot.tool.clear_inventory(double_check=True))  # 初始化清空倉庫
 status_cache: list | None = None  # status狀態快取
 status_cache_lock = asyncio.Lock()
 status_last_time = time.time()  # status頁狀態-最後刷新時間
+esp_do_depot_last = {}  # 暫存上次紀錄
 
 
 class ConnectionManager:
@@ -268,10 +270,22 @@ async def esp_do_depot(data: dict):
     """處理 ESP32 傳來的出貨資料，並寫入 Depot"""
     if (not data) or (not data.get("final", False)):
         return
+
+    global esp_do_depot_last
     try:
-        for i in data:
-            await depot.write(DepotItem("set", i, data[i]), "esp")
-        # print("[Depot]-info: write_down")
+        if data != esp_do_depot_last:
+            item_dict: dict = {i["esp"]: i["name"] for i in ITEM_ID}
+            for i in data:
+                if i in item_dict:
+                    await depot.write(
+                        DepotItem(
+                            "auto",
+                            item_dict[i],
+                            data[i] - esp_do_depot_last.get(i, 0),
+                        ),
+                        source="esp",
+                    )
+            esp_do_depot_last = data
     except DepotError as err:
         print(f"[Depot]-error: {err}")
 
