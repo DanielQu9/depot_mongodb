@@ -532,13 +532,13 @@ class AsyncDepot:
 class Tool:
     def __init__(self) -> None:
         # 連線
-        self.client = AsyncMongoClient(MONGO_ADDR)
+        self.client = MongoClient(MONGO_ADDR)
         self.db = self.client["depotDB"]
 
         # 資料表
         self.inventory = self.db["inventory"]  # 倉庫
 
-    async def clear_inventory(self, double_check: bool) -> bool:
+    def clear_inventory(self, double_check: bool) -> bool:
         """
         清空 inventory 資料表
 
@@ -554,7 +554,7 @@ class Tool:
 
         try:
             # 刪除 inventory 資料表中的所有文件
-            result = await self.inventory.delete_many({})
+            result = self.inventory.delete_many({})
             print(f"成功清空 inventory 資料表，共刪除 {result.deleted_count} 筆資料")
             return True
         except Exception as e:
