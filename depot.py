@@ -343,7 +343,7 @@ class Depot:
         result = self.collection.insert_one(record)
         _log_operation(
             "SUCCESS",
-            f"倉庫{type}庫操作",
+            f"倉庫 {type} 操作",
             f"紀錄 ID: {result.inserted_id}",
             item,
             amount,
@@ -638,7 +638,7 @@ class AsyncDepot:
         result = await self.collection.insert_one(record)
         _log_operation(
             "SUCCESS",
-            f"倉庫{operation_type}庫操作",
+            f"倉庫 {operation_type} 操作",
             f"紀錄 ID: {result.inserted_id}",
             item,
             amount,
