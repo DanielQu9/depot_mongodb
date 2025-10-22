@@ -2,6 +2,7 @@
     {
         "id": 0,
         "name": "小螺母",
+        "esp": "small",
         "setting": {
             "no_auto_remove": true,
             "unit_weight": 1,
@@ -11,6 +12,7 @@
     {
         "id": 1,
         "name": "大螺母",
+        "esp": "big",
         "setting": {
             "no_auto_remove": true,
             "unit_weight": 1,
@@ -20,6 +22,7 @@
     {
         "id": 2,
         "name": "立布管",
+        "esp": "libu",
         "setting": {
             "no_auto_remove": true,
             "unit_weight": 1,
@@ -29,6 +32,7 @@
     {
         "id": 3,
         "name": "鐵管",
+        "esp": "tube",
         "setting": {
             "no_auto_remove": true,
             "unit_weight": 1,
