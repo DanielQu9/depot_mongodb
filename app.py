@@ -232,8 +232,8 @@ async def stock_submit(stock_data: list[dict]):
 @app.post("/menu_post")
 async def menu_post(menu_data: dict):
     try:
-        await menu_do_depot(menu_data)
-        return {"status": "success", "message": "資料已成功寫入"}
+        # await menu_do_depot(menu_data) # 雙重紀錄會造成紀錄混亂，以 esp_do_depot 為主。
+        return {"status": "success", "message": "資料已成功寫入(meun 不寫入)"}
     except Exception as err:
         return {"status": "error", "message": str(err)}
 
